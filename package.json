@@ -1,12 +1,19 @@
 {
   "name": "chowbot",
   "version": "1.0.0",
-  "description": "",
+  "description": "A restaurant chatbot that will assist customers in placing orders for their preferred meals.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/misspee007/chowbot"
+  },
+  "bugs": {
+    "url": "https://github.com/misspee007/chowbot/issues"
+  },
+  "homepage": "https://github.com/misspee007/chowbot#readme",
+  "author": "Precious Abubakar",
   "license": "ISC"
 }
