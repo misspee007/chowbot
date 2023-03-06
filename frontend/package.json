@@ -1,0 +1,23 @@
+{
+  "name": "chowbot_app",
+  "version": "1.0.0",
+  "description": "A restaurant chatbot that will assist customers in placing orders for their preferred meals.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview"
+  },
+  "keywords": [],
+  "author": "Precious Abubakar",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^3.1.0",
+    "vite": "^4.1.4"
+  }
+}
