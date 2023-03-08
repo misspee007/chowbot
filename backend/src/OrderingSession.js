@@ -73,7 +73,7 @@ class OrderingSession {
 			eventName: "message",
 		});
 
-		this.socket.on("message", (message) => {
+		this.socket.once("message", (message) => {
 			this.handleMessage(message);
 		});
 	}
@@ -135,10 +135,9 @@ class OrderingSession {
 			message: "0. Go to main menu",
 			eventName: "menu",
 		});
-
-		this.socket.on("menu", (option) => {
-			this.handleMenuOption(option);
-		});
+    this.socket.once("menu", (option) => {
+      this.handleMenuOption(option);
+    });
 	}
 
 	handleMenuOption(option) {
@@ -235,4 +234,3 @@ class OrderingSession {
 }
 
 module.exports = OrderingSession;
-// TODO:

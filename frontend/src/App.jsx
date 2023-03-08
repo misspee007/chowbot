@@ -29,6 +29,7 @@ const App = () => {
 		socket.on("orders", (orders) => {
 			parseOrderHistory(orders.data);
 		});
+
 	}, []);
 
 	const handleInput = (e) => {
