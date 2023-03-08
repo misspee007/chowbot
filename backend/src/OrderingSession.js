@@ -37,13 +37,13 @@ class OrderingSession {
 		this.orderStatus = "";
 		this.menu = menu;
 		this.order = [];
-    this.orders = [];
+		this.orders = [];
 		this.events = [];
 
-    this.emitOrderingEvent({
-      message: "Welcome to Chowbot!",
-      eventName: "message",
-    });
+		this.emitOrderingEvent({
+			message: "Welcome to Chowbot!",
+			eventName: "message",
+		});
 		this.init();
 	}
 
@@ -82,10 +82,10 @@ class OrderingSession {
 		const selectedOption = Number(message);
 		switch (selectedOption) {
 			case 1:
-        this.emitOrderingEvent({
-          message: "Please select an item from the menu:",
-          eventName: "message",
-        });
+				this.emitOrderingEvent({
+					message: "Please select an item from the menu:",
+					eventName: "message",
+				});
 				this.displayMenu();
 				break;
 			case 99:
@@ -136,28 +136,35 @@ class OrderingSession {
 			eventName: "menu",
 		});
 
-    this.socket.on("menu", (option) => {
-      this.handleMenuOption(option);
-    });
+		this.socket.on("menu", (option) => {
+			this.handleMenuOption(option);
+		});
 	}
 
-  handleMenuOption(option) {
+	handleMenuOption(option) {
 		const selectedOption = Number(option);
-    const item = this.menu[selectedOption - 1];
+		const item = this.menu[selectedOption - 1];
 
-    // if selected option is a valid menu item, add to order, else display error message
+		// if selected option is a valid menu item, add to order, else display error message
 		if (item) {
-      this.order.push(item);
-      if (this.order.length === 1) {
-        this.orderStatus = orderStatus.PENDING;
-      }
+			// if order is empty, set order status to pending
+			if (this.order.length === 0) {
+				this.orderStatus = orderStatus.PENDING;
+			}
+
+			// add item to order
+			const orderItem = {
+				name: item.name,
+				price: item.price,
+				qty: 1,
+			};
+			this.order.push(orderItem);
+
 			this.emitOrderingEvent({
-				message:
-					`${item.name} added to order. Please select another item from the menu:`,
+				message: `${item.name} added to order. Please select another item from the menu:`,
 				eventName: "message",
 			});
 			this.displayMenu();
-      // if it's the first item in the order, set the order status to pending
 		} else if (selectedOption === 0) {
 			this.init();
 		} else {
@@ -170,42 +177,52 @@ class OrderingSession {
 
 	checkout() {
 		// if order is empty, display error message, else proceed to checkout
-    if (this.orderStatus !== orderStatus.PENDING) {
-      this.emitOrderingEvent({
-        message: "No order to place!",
-        eventName: "message",
-      });
-      this.emitOrderingEvent({
-        message: "Please select an option:",
-        eventName: "message",
-      });
-      this.emitOrderingEvent({
-        message: "1. Place an order",
-        eventName: "message",
-      });
-      this.emitOrderingEvent({
-        message: "98. View order history",
-        eventName: "message",
-      });
-      return;
-    }
+		if (this.orderStatus !== orderStatus.PENDING) {
+			this.emitOrderingEvent({
+				message: "No order to place!",
+				eventName: "message",
+			});
+			this.emitOrderingEvent({
+				message: "Please select an option:",
+				eventName: "message",
+			});
+			this.emitOrderingEvent({
+				message: "1. Place an order",
+				eventName: "message",
+			});
+			this.emitOrderingEvent({
+				message: "98. View order history",
+				eventName: "message",
+			});
+			return;
+		}
 
-    // place order
-    this.orderStatus = orderStatus.COMPLETED;
-    this.emitOrderingEvent({
-      message: "Order placed successfully!",
-      eventName: "message",
-    });
-    this.init();
+    this.handleOrder();
+		this.init();
 	}
+
+  handleOrder() {
+    const date = new Date();
+    const order = {
+      id: this.orders.length + 1,
+      status: orderStatus.COMPLETED,
+      date: date.toDateString(),
+      total: this.order.reduce((prev, curr) => prev + curr.price, 0),
+      items: this.order,
+    };
+    this.orders.push(order);
+    this.orderStatus = orderStatus.COMPLETED;
+		this.emitOrderingEvent({
+			message: "Order placed successfully!",
+			eventName: "message",
+		});
+  }
 
 	showOrderHistory() {
 		this.emitOrderingEvent({
-      eventName: "orders",
-      data: {
-        orders: this.orders,
-      },
-    });
+			eventName: "orders",
+			data: this.orders,
+		});
 	}
 
 	showCurrentOrder() {
@@ -218,5 +235,4 @@ class OrderingSession {
 }
 
 module.exports = OrderingSession;
-
-// TODO: Fix menu event loop bug
+// TODO:

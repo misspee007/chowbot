@@ -8,7 +8,7 @@ const socket = io(CONFIG.API_URL);
 
 const App = () => {
 	const [messages, setMessages] = useState([]);
-  const [eventName, setEventName] = useState("");
+	const [eventName, setEventName] = useState("");
 	const [input, setInput] = useState("");
 
 	useEffect(() => {
@@ -17,21 +17,18 @@ const App = () => {
 		});
 
 		socket.on("message", (message) => {
-      console.log("Server says: ", message);
 			setMessages((messages) => [...messages, message.message]);
-      setEventName(message.eventName);
+			setEventName(message.eventName);
 		});
 
-    socket.on("menu", (menu) => {
-      console.log("Server says: ", menu);
-      setMessages((messages) => [...messages, menu.message]);
-      setEventName(menu.eventName);
-    });
+		socket.on("menu", (menu) => {
+			setMessages((messages) => [...messages, menu.message]);
+			setEventName(menu.eventName);
+		});
 
-    socket.on("orders", (orders) => {
-      console.log("Server says: ", orders);
-      // order history
-    });
+		socket.on("orders", (orders) => {
+			parseOrderHistory(orders.data);
+		});
 	}, []);
 
 	const handleInput = (e) => {
@@ -43,6 +40,27 @@ const App = () => {
 		socket.emit(eventName, input);
 		setInput("");
 	};
+
+	function parseOrderHistory(orders) {
+		setMessages((messages) => [...messages, "Order History: "]);
+
+		orders.forEach((order) => {
+			setMessages((messages) => [...messages, `Date: ${order.date}`]);
+			setMessages((messages) => [
+				...messages,
+				`Order ID: ${order.id} - ${order.status}`,
+			]);
+
+			order.items.forEach((item, index) => {
+				setMessages((messages) => [
+					...messages,
+					`${index + 1}. ${item.name} - ₦${item.price} x ${item.qty}`,
+				]);
+			});
+
+			setMessages((messages) => [...messages, `Total: ₦${order.total}`]);
+		});
+	}
 
 	return (
 		<div>
