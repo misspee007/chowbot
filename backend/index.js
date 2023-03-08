@@ -21,10 +21,11 @@ app.get("/", (req, res) => {
 	res.sendFile(path.join(rootDir, "frontend", "dist", "index.html"));
 });
 
-const orderingSession = new OrderingSession({ io });
 
 io.on("connection", (socket) => {
-	console.log("a user connected");
+  console.log("a user connected");
+
+  const orderingSession = new OrderingSession(socket);
 
 	socket.on("disconnect", () => {
 		console.log("user disconnected");
