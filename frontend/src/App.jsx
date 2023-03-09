@@ -30,6 +30,10 @@ const App = () => {
 			parseOrderHistory(orders.data);
 		});
 
+    socket.on("order", (order) => {
+			parseOrder(order.data);
+		});
+
 	}, []);
 
 	const handleInput = (e) => {
@@ -62,6 +66,17 @@ const App = () => {
 			setMessages((messages) => [...messages, `Total: ₦${order.total}`]);
 		});
 	}
+
+  function parseOrder(order) {
+    setMessages((messages) => [...messages, "Order: "]);
+
+    order.forEach((item, index) => {
+      setMessages((messages) => [
+        ...messages,
+        `${index + 1}. ${item.name} - ₦${item.price} x ${item.qty}`,
+      ]);
+    });
+  }
 
 	return (
 		<div>

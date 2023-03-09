@@ -34,7 +34,7 @@ class OrderingSession {
 	constructor(socket) {
 		this.socket = socket;
 		this.user = socket.id;
-		this.orderStatus = "";
+		this.orderStatus = null;
 		this.menu = menu;
 		this.order = [];
 		this.orders = [];
@@ -144,7 +144,6 @@ class OrderingSession {
 		const selectedOption = Number(option);
 		const item = this.menu[selectedOption - 1];
 
-		// if selected option is a valid menu item, add to order, else display error message
 		if (item) {
 			// if order is empty, set order status to pending
 			if (this.order.length === 0) {
@@ -209,8 +208,9 @@ class OrderingSession {
       total: this.order.reduce((prev, curr) => prev + curr.price, 0),
       items: this.order,
     };
+    this.order = [];
     this.orders.push(order);
-    this.orderStatus = orderStatus.COMPLETED;
+    this.orderStatus = null;
 		this.emitOrderingEvent({
 			message: "Order placed successfully!",
 			eventName: "message",
@@ -222,14 +222,64 @@ class OrderingSession {
 			eventName: "orders",
 			data: this.orders,
 		});
+    this.emitOrderingEvent({
+			message: "0. Go back",
+			eventName: "menu",
+		});
+    this.socket.once("menu", (option) => {
+      this.handleMenuOption(option);
+    });
 	}
 
 	showCurrentOrder() {
-		console.log("showCurrentOrder");
+    if (this.orderStatus !== orderStatus.PENDING) {
+      this.emitOrderingEvent({
+        message: "No order in progress!",
+        eventName: "message",
+      });
+      this.init();
+      return;
+    }
+
+		this.emitOrderingEvent({
+      eventName: "order",
+      data: this.order,
+    });
+    this.emitOrderingEvent({
+			message: "0. Go back",
+			eventName: "menu",
+		});
+    this.socket.once("menu", (option) => {
+      this.handleMenuOption(option);
+    });
 	}
 
 	cancelOrder() {
-		console.log("cancelOrder");
+		if (this.orderStatus !== orderStatus.PENDING) {
+      this.emitOrderingEvent({
+        message: "No order in progress!",
+        eventName: "message",
+      });
+      this.init();
+      return;
+    }
+
+    const date = new Date();
+    const order = {
+      id: this.orders.length + 1,
+      status: orderStatus.CANCELLED,
+      date: date.toDateString(),
+      total: this.order.reduce((prev, curr) => prev + curr.price, 0),
+      items: this.order,
+    };
+    this.order = [];
+    this.orders.push(order);
+    this.orderStatus = null;
+    this.emitOrderingEvent({
+      message: "Order cancelled!",
+      eventName: "message",
+    });
+    this.init();
 	}
 }
 
