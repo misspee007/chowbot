@@ -30,15 +30,48 @@ class OrderingSessionEvent {
 	}
 }
 
+class UserData {
+  constructor(socket) {
+    this.socket = socket;
+    this.orderStatus = socket.request.session.orderStatus;
+    this.order = socket.request.session.order;
+    this.orders = socket.request.session.orders;
+  }
+
+  setOrderStatus(orderStatus) {
+    this.socket.request.session.orderStatus = orderStatus;
+    this.socket.request.session.save();
+
+    console.log("order status after update: ", this.socket.request.session.orderStatus);
+  }
+
+  setOrder(item) {
+    this.socket.request.session.order.push(item);
+    this.socket.request.session.save();
+
+    console.log("order after update: ", this.socket.request.session.order);
+  }
+
+  setOrders(orders) {
+    this.socket.request.session.orders.push(orders);
+    this.socket.request.session.save();
+
+    console.log("orders after update: ", this.socket.request.session.orders);
+  }
+
+  resetOrder() {
+    this.socket.request.session.orderStatus = null;
+    this.socket.request.session.order = [];
+    this.socket.request.session.save();
+
+    console.log("session after reset: ", this.socket.request.session);
+  }
+}
+
 class OrderingSession {
 	constructor(socket) {
 		this.socket = socket;
-		this.user = socket.id;
-		this.orderStatus = null;
-		this.menu = menu;
-		this.order = [];
-		this.orders = [];
-		this.events = [];
+		this.userData = new UserData(socket);
 
 		this.emitOrderingEvent({
 			message: "Welcome to Chowbot!",
@@ -111,7 +144,6 @@ class OrderingSession {
 
 	createOrderingEvent(event) {
 		const newEvent = new OrderingSessionEvent(event);
-		this.events.push(newEvent);
 		return newEvent;
 	}
 
@@ -146,8 +178,8 @@ class OrderingSession {
 
 		if (item) {
 			// if order is empty, set order status to pending
-			if (this.order.length === 0) {
-				this.orderStatus = orderStatus.PENDING;
+			if (this.userData.order.length === 0) {
+				this.userData.orderStatus = orderStatus.PENDING;
 			}
 
 			// add item to order
@@ -156,7 +188,8 @@ class OrderingSession {
 				price: item.price,
 				qty: 1,
 			};
-			this.order.push(orderItem);
+			this.userData.setOrder(orderItem);
+      console.log("User Data after update: ", this.userData.orderStatus, this.userData.order, this.userData.orders);
 
 			this.emitOrderingEvent({
 				message: `${item.name} added to order. Please select another item from the menu:`,
@@ -175,7 +208,7 @@ class OrderingSession {
 
 	checkout() {
 		// if order is empty, display error message, else proceed to checkout
-		if (this.orderStatus !== orderStatus.PENDING) {
+		if (this.userData.orderStatus !== orderStatus.PENDING) {
 			this.emitOrderingEvent({
 				message: "No order to place!",
 				eventName: "message",
@@ -202,15 +235,16 @@ class OrderingSession {
   handleOrder() {
     const date = new Date();
     const order = {
-      id: this.orders.length + 1,
+      id: this.userData.orders.length + 1,
       status: orderStatus.COMPLETED,
       date: date.toDateString(),
-      total: this.order.reduce((prev, curr) => prev + curr.price, 0),
-      items: this.order,
+      total: this.userData.order.reduce((prev, curr) => prev + curr.price, 0),
+      items: this.userData.order,
     };
-    this.order = [];
-    this.orders.push(order);
-    this.orderStatus = null;
+    this.userData.resetOrder();
+    this.userData.setOrders(order);
+    console.log("User Data after update: ", this.userData.orderStatus, this.userData.order, this.userData.orders);
+
 		this.emitOrderingEvent({
 			message: "Order placed successfully!",
 			eventName: "message",
@@ -220,7 +254,7 @@ class OrderingSession {
 	showOrderHistory() {
 		this.emitOrderingEvent({
 			eventName: "orders",
-			data: this.orders,
+			data: this.userData.orders,
 		});
     this.emitOrderingEvent({
 			message: "0. Go back",
@@ -232,7 +266,7 @@ class OrderingSession {
 	}
 
 	showCurrentOrder() {
-    if (this.orderStatus !== orderStatus.PENDING) {
+    if (this.userData.orderStatus !== orderStatus.PENDING) {
       this.emitOrderingEvent({
         message: "No order in progress!",
         eventName: "message",
@@ -243,7 +277,7 @@ class OrderingSession {
 
 		this.emitOrderingEvent({
       eventName: "order",
-      data: this.order,
+      data: this.userData.order,
     });
     this.emitOrderingEvent({
 			message: "0. Go back",
@@ -255,7 +289,7 @@ class OrderingSession {
 	}
 
 	cancelOrder() {
-		if (this.orderStatus !== orderStatus.PENDING) {
+		if (this.userData.orderStatus !== orderStatus.PENDING) {
       this.emitOrderingEvent({
         message: "No order in progress!",
         eventName: "message",
@@ -266,15 +300,15 @@ class OrderingSession {
 
     const date = new Date();
     const order = {
-      id: this.orders.length + 1,
+      id: this.userData.orders.length + 1,
       status: orderStatus.CANCELLED,
       date: date.toDateString(),
-      total: this.order.reduce((prev, curr) => prev + curr.price, 0),
-      items: this.order,
+      total: this.userData.order.reduce((prev, curr) => prev + curr.price, 0),
+      items: this.userData.order,
     };
-    this.order = [];
-    this.orders.push(order);
-    this.orderStatus = null;
+    this.userData.resetOrder();
+    this.userData.setOrders(order);
+
     this.emitOrderingEvent({
       message: "Order cancelled!",
       eventName: "message",

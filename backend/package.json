@@ -4,16 +4,20 @@
   "description": "This is the API for the Chowbot project.",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "prod": "set NODE_ENV=production && node index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "connect-mongo": "^5.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
+    "express-session": "^1.17.3",
     "helmet": "^6.0.1",
-    "socket.io": "^4.6.1"
+    "socket.io": "^4.6.1",
+    "mongodb": "^3.6.9"
   }
 }

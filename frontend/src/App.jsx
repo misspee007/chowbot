@@ -4,7 +4,9 @@ import { createRoot } from "react-dom/client";
 import io from "socket.io-client";
 import CONFIG from "./config";
 
-const socket = io(CONFIG.API_URL);
+const socket = io(CONFIG.API_URL, {
+  withCredentials: true,
+});
 
 const App = () => {
 	const [messages, setMessages] = useState([]);
