@@ -5,14 +5,14 @@ import io from "socket.io-client";
 import CONFIG from "./config";
 
 const socket = io(CONFIG.API_URL, {
-  withCredentials: true,
+	withCredentials: true,
 });
 
 const App = () => {
 	const [messages, setMessages] = useState([]);
 	const [eventName, setEventName] = useState("");
 	const [input, setInput] = useState("");
-  const messagesEndRef = useRef(null);
+	const messagesEndRef = useRef(null);
 
 	useEffect(() => {
 		socket.on("connect", () => {
@@ -38,9 +38,9 @@ const App = () => {
 		});
 	}, []);
 
-  useEffect(() => {
-    messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+	useEffect(() => {
+		messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+	}, [messages]);
 
 	const handleInput = (e) => {
 		setInput(e.target.value);
@@ -93,10 +93,12 @@ const App = () => {
 						<div className="chat-container">
 							<ListGroup>
 								{messages.map((message, index) => (
-									<ListGroup.Item key={index}>{message}</ListGroup.Item>
+									<ListGroup.Item key={index}>
+										<div style={{ whiteSpace: "pre-line" }}>{message}</div>
+									</ListGroup.Item>
 								))}
 							</ListGroup>
-              <div ref={messagesEndRef}></div>
+							<div ref={messagesEndRef}></div>
 						</div>
 						<Form onSubmit={handleSubmit} className="mt-3">
 							<Form.Group>

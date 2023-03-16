@@ -1,11 +1,10 @@
 const config = require("../config");
 
-const wrap = (expressMiddleware) => (socket, next) =>
-	expressMiddleware(socket.request, {}, next);
-
 const corsConfig = {
 	origin: config.CLIENT_URL,
+	methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+	allowedHeaders: ["Content-Type", "Authorization"],
 	credentials: true,
 };
 
-module.exports = { wrap, corsConfig };
+module.exports = { corsConfig };

@@ -5,18 +5,18 @@ const MongoStore = require("connect-mongo");
 const sess = {
   name: "chowbot",
 	secret: config.SESSION_SECRET,
-	resave: true,
-	saveUninitialized: false,
+	resave: false,
+	saveUninitialized: true,
+	cookie: {
+    // domain: "localhost",
+    maxAge: config.COOKIE_MAX_AGE,
+    secure: true,
+    httpOnly: true,
+    sameSite: "none",
+  },
   store: MongoStore.create({
     mongoUrl: config.MONGODB_URI,
   }),
-	cookie: {
-    name: "chowbot",
-    domain: config.DOMAIN,
-    maxAge: config.COOKIE_MAX_AGE,
-    secure: false,
-    httpOnly: false,
-  },
 };
 
 if(process.env.NODE_ENV === "production") {

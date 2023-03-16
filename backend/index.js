@@ -7,7 +7,7 @@ const { Server } = require("socket.io");
 const config = require("./src/config");
 
 const sessionMiddleware = require("./src/middleware/session");
-const { wrap, corsConfig } = require("./src/controllers/server.controller");
+const { corsConfig } = require("./src/controllers/server.controller");
 const OrderingSession = require("./src/OrderingSession");
 
 const app = express();
@@ -17,18 +17,20 @@ const io = new Server(server, {
 });
 
 app.use(cors(corsConfig));
-app.use(
-	helmet({
-		contentSecurityPolicy: {
-			directives: {
-				...helmet.contentSecurityPolicy.getDefaultDirectives(),
-				"script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-				"style-src": ["'self'", "'unsafe-inline'"],
-				"default-src": ["'self'", "data:"],
-			},
-		},
-	})
-);
+app.use((req, res, next) => {
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  helmet()(req, res, next);
+});
 app.use(express.json());
 
 app.use(sessionMiddleware);
@@ -44,7 +46,7 @@ io.on("connection", (socket) => {
 			order: [],
 			orders: [],
 		};
-    socket.request.session.save();
+		socket.request.session.save();
 	}
 
 	const orderingSession = new OrderingSession(socket);
