@@ -8,7 +8,7 @@ const sess = {
 	resave: false,
 	saveUninitialized: true,
 	cookie: {
-    // domain: "localhost",
+    // domain: config.COOKIE_DOMAIN,
     maxAge: config.COOKIE_MAX_AGE,
     secure: true,
     httpOnly: true,

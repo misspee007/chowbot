@@ -6,7 +6,7 @@ const CONFIG = {
   NODE_ENV: process.env.NODE_ENV,
   SESSION_SECRET: process.env.SESSION_SECRET,
   COOKIE_MAX_AGE: eval(process.env.COOKIE_MAX_AGE),
-  DOMAIN: process.env.NODE_ENV === "production" ? process.env.DOMAIN : undefined,
+  COOKIE_DOMAIN: process.env.COOKIE_DOMAIN,
   MONGODB_URI: process.env.MONGODB_URI,
   CLIENT_URL: process.env.CLIENT_URL,
 };
