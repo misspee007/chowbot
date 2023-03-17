@@ -48,34 +48,27 @@ class OrderingSession {
 			this.createUser()
 				.then((user) => {
 					this.user = user;
+					this.init("Welcome to Chowbot!");
 				})
 				.catch((err) => {
 					console.log("Error creating user: ", err);
 					throw new Error(err);
 				});
-
-			this.init("Welcome to Chowbot!");
 		} else {
 			this.findUser()
 				.then((user) => {
 					this.user = user;
+					return this.getChatHistory();
 				})
-				.catch((err) => {
-					console.log("Error finding user: ", err);
-					throw new Error(err);
-				});
-
-			this.getChatHistory()
 				.then((msgs) => {
 					this.chatHistory = msgs;
 					this.emitChatHistory(msgs);
+					this.init("Welcome back to Chowbot!");
 				})
 				.catch((err) => {
-					console.log("Error getting chat history: ", err);
+					console.log("Error: ", err);
 					throw new Error(err);
 				});
-
-			this.init("Welcome back to Chowbot!");
 		}
 	}
 
