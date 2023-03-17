@@ -4,13 +4,16 @@ import { createRoot } from "react-dom/client";
 import io from "socket.io-client";
 import CONFIG from "./config";
 
-const socket = io(CONFIG.API_URL);
+const socket = io(CONFIG.API_URL, {
+	withCredentials: true,
+});
 
 const App = () => {
 	const [messages, setMessages] = useState([]);
+	const [prevMsgs, setPrevMsgs] = useState([]);
 	const [eventName, setEventName] = useState("");
 	const [input, setInput] = useState("");
-  const messagesEndRef = useRef(null);
+	const messagesEndRef = useRef(null);
 
 	useEffect(() => {
 		socket.on("connect", () => {
@@ -20,6 +23,11 @@ const App = () => {
 		socket.on("message", (message) => {
 			setMessages((messages) => [...messages, message.message]);
 			setEventName(message.eventName);
+		});
+
+		socket.on("chatHistory", (msg) => {
+			setPrevMsgs((prevMsgs) => [...prevMsgs, msg.message]);
+			setEventName(msg.eventName);
 		});
 
 		socket.on("menu", (menu) => {
@@ -36,9 +44,9 @@ const App = () => {
 		});
 	}, []);
 
-  useEffect(() => {
-    messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+	useEffect(() => {
+		messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+	}, [messages]);
 
 	const handleInput = (e) => {
 		setInput(e.target.value);
@@ -90,11 +98,19 @@ const App = () => {
 						<h1 className="text-center mb-4">Restaurant Chatbot</h1>
 						<div className="chat-container">
 							<ListGroup>
+								{prevMsgs &&
+									prevMsgs.map((message, index) => (
+										<ListGroup.Item key={index}>
+											<div style={{ whiteSpace: "pre-line" }}>{message}</div>
+										</ListGroup.Item>
+									))}
 								{messages.map((message, index) => (
-									<ListGroup.Item key={index}>{message}</ListGroup.Item>
+									<ListGroup.Item key={index}>
+										<div style={{ whiteSpace: "pre-line" }}>{message}</div>
+									</ListGroup.Item>
 								))}
 							</ListGroup>
-              <div ref={messagesEndRef}></div>
+							<div ref={messagesEndRef}></div>
 						</div>
 						<Form onSubmit={handleSubmit} className="mt-3">
 							<Form.Group>
