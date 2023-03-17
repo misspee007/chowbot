@@ -23,8 +23,13 @@ io.on("connection", (socket) => {
 
 	const orderingSession = new OrderingSession(socket);
 
-	// save message to database
+	// emit message and save message to database
 	socket.on("saveMsg", ({ message, isBot }) => {
+		orderingSession.emitOrderingEvent({
+			message,
+			eventName: "message",
+			isBot,
+		});
 		orderingSession
 			.saveMsg(message, isBot)
 			.then(() => {

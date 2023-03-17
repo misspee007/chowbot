@@ -183,9 +183,7 @@ class OrderingSession {
 	}
 
 	handleMessage(message) {
-    console.log("Message: ", message, typeof message);
 		const selectedOption = Number(message);
-    console.log("Selected option: ", selectedOption, typeof selectedOption);
 
 		switch (selectedOption) {
 			case 1:
@@ -196,7 +194,8 @@ class OrderingSession {
 							eventName: "menu",
 						});
 						this.socket.once("menu", (option) => {
-							this.handleMenuOption(option);
+              const parsedOption = Number(option);
+							this.handleMenuOption(parsedOption);
 						});
 					})
 					.catch((err) => {

@@ -55,7 +55,6 @@ const App = () => {
 	const handleSubmit = (e) => {
 		e.preventDefault();
 		socket.emit(eventName, input);
-		console.log("eventName and input: ", eventName, input, typeof input);
 		socket.emit("saveMsg", { message: input, isBot: false });
 		setInput("");
 	};
