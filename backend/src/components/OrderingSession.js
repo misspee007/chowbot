@@ -186,7 +186,7 @@ class OrderingSession {
 
 	handleMessage(message) {
 		if (!message || message.trim().length === 0) {
-      console.log("Invalid message: ", message);
+			console.log("Invalid message: ", message);
 			this.emitOrderingEvent({
 				message: "Invalid message. Please try again.",
 				eventName: "message",
@@ -325,10 +325,14 @@ class OrderingSession {
 		};
 		this.socket.request.session.orderStatus = ORDER_STATUS.NONE;
 		this.socket.request.session.currentOrder = [];
-		this.socket.request.session.orders = [
-			...this.socket.request.session.orders,
-			order,
-		];
+		if (!Array.isArray(this.socket.request.session.orders)) {
+			this.socket.request.session.orders = [order];
+		} else {
+			this.socket.request.session.orders = [
+				...this.socket.request.session.orders,
+				order,
+			];
+		}
 		this.saveSession();
 
 		this.emitOrderingEvent({
@@ -371,10 +375,14 @@ class OrderingSession {
 	}
 
 	showCurrentOrder() {
-		if (this.socket.request.session.orderStatus !== ORDER_STATUS.PENDING) {
-			this.init("No order in progress!");
-			return;
+		if (
+			!this.socket.request.session.orderStatus ||
+			this.socket.request.session.orderStatus !== ORDER_STATUS.PENDING
+		) {
+			return this.init("No order in progress!");
 		}
+
+		console.log("current order is: ", this.socket.request.session.currentOrder);
 
 		this.emitOrderingEvent({
 			eventName: "order",
@@ -392,8 +400,7 @@ class OrderingSession {
 
 	cancelOrder() {
 		if (this.socket.request.session.orderStatus !== ORDER_STATUS.PENDING) {
-			this.init("No order in progress!");
-			return;
+			return this.init("No order in progress!");
 		}
 
 		const date = new Date();
@@ -408,10 +415,15 @@ class OrderingSession {
 		};
 		this.socket.request.session.orderStatus = ORDER_STATUS.NONE;
 		this.socket.request.session.currentOrder = [];
-		this.socket.request.session.orders = [
-			...this.socket.request.session.orders,
-			order,
-		];
+		if (!Array.isArray(this.socket.request.session.orders)) {
+			this.socket.request.session.orders = [order];
+		} else {
+			this.socket.request.session.orders = [
+				...this.socket.request.session.orders,
+				order,
+			];
+		}
+    this.saveSession();
 
 		this.init("Order cancelled!");
 	}
