@@ -8,6 +8,7 @@ const CONFIG = {
   COOKIE_MAX_AGE: eval(process.env.COOKIE_MAX_AGE),
   COOKIE_DOMAIN: process.env.COOKIE_DOMAIN,
   MONGODB_URI: process.env.MONGODB_URI,
+  SENTRY_DSN: process.env.SENTRY_DSN,
   CLIENT_URL: process.env.CLIENT_URL,
 };
 
