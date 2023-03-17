@@ -115,7 +115,7 @@ class OrderingSession {
 		msgs.forEach((chat) => {
 			this.emitOrderingEvent({
 				message: chat.message,
-				eventName: "message",
+				eventName: "chatHistory",
 				isBot: chat.isBot,
 			});
 		});

@@ -10,6 +10,7 @@ const socket = io(CONFIG.API_URL, {
 
 const App = () => {
 	const [messages, setMessages] = useState([]);
+	const [prevMsgs, setPrevMsgs] = useState([]);
 	const [eventName, setEventName] = useState("");
 	const [input, setInput] = useState("");
 	const messagesEndRef = useRef(null);
@@ -22,6 +23,11 @@ const App = () => {
 		socket.on("message", (message) => {
 			setMessages((messages) => [...messages, message.message]);
 			setEventName(message.eventName);
+		});
+
+		socket.on("chatHistory", (msg) => {
+			setPrevMsgs((prevMsgs) => [...prevMsgs, msg.message]);
+			setEventName(msg.eventName);
 		});
 
 		socket.on("menu", (menu) => {
@@ -49,8 +55,8 @@ const App = () => {
 	const handleSubmit = (e) => {
 		e.preventDefault();
 		socket.emit(eventName, input);
-    console.log("eventName and input: ", eventName, input, typeof input);
-    socket.emit("saveMsg", { message: input, isBot: false });
+		console.log("eventName and input: ", eventName, input, typeof input);
+		socket.emit("saveMsg", { message: input, isBot: false });
 		setInput("");
 	};
 
@@ -94,6 +100,12 @@ const App = () => {
 						<h1 className="text-center mb-4">Restaurant Chatbot</h1>
 						<div className="chat-container">
 							<ListGroup>
+								{prevMsgs &&
+									prevMsgs.map((message, index) => (
+										<ListGroup.Item key={index}>
+											<div style={{ whiteSpace: "pre-line" }}>{message}</div>
+										</ListGroup.Item>
+									))}
 								{messages.map((message, index) => (
 									<ListGroup.Item key={index}>
 										<div style={{ whiteSpace: "pre-line" }}>{message}</div>
