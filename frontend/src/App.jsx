@@ -1,15 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Container, Row, Col, Form, Button, ListGroup } from "react-bootstrap";
 import { createRoot } from "react-dom/client";
 import io from "socket.io-client";
 import CONFIG from "./config";
 
-const socket = io(CONFIG.API_URL);
+const socket = io(CONFIG.API_URL, {
+	withCredentials: true,
+});
 
 const App = () => {
 	const [messages, setMessages] = useState([]);
+	const [prevMsgs, setPrevMsgs] = useState([]);
 	const [eventName, setEventName] = useState("");
 	const [input, setInput] = useState("");
+	const messagesEndRef = useRef(null);
 
 	useEffect(() => {
 		socket.on("connect", () => {
@@ -21,6 +25,11 @@ const App = () => {
 			setEventName(message.eventName);
 		});
 
+		socket.on("chatHistory", (msg) => {
+			setPrevMsgs((prevMsgs) => [...prevMsgs, msg.message]);
+			setEventName(msg.eventName);
+		});
+
 		socket.on("menu", (menu) => {
 			setMessages((messages) => [...messages, menu.message]);
 			setEventName(menu.eventName);
@@ -30,11 +39,14 @@ const App = () => {
 			parseOrderHistory(orders.data);
 		});
 
-    socket.on("order", (order) => {
+		socket.on("order", (order) => {
 			parseOrder(order.data);
 		});
-
 	}, []);
+
+	useEffect(() => {
+		messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+	}, [messages]);
 
 	const handleInput = (e) => {
 		setInput(e.target.value);
@@ -67,28 +79,39 @@ const App = () => {
 		});
 	}
 
-  function parseOrder(order) {
-    setMessages((messages) => [...messages, "Order: "]);
+	function parseOrder(order) {
+		setMessages((messages) => [...messages, "Order: "]);
 
-    order.forEach((item, index) => {
-      setMessages((messages) => [
-        ...messages,
-        `${index + 1}. ${item.name} - ₦${item.price} x ${item.qty}`,
-      ]);
-    });
-  }
+		order.forEach((item, index) => {
+			setMessages((messages) => [
+				...messages,
+				`${index + 1}. ${item.name} - ₦${item.price} x ${item.qty}`,
+			]);
+		});
+	}
 
 	return (
 		<div>
 			<Container className="my-3">
-				<Row>
-					<Col>
-						<h1>Restaurant Chatbot</h1>
-						<ListGroup>
-							{messages.map((message, index) => (
-								<ListGroup.Item key={index}>{message}</ListGroup.Item>
-							))}
-						</ListGroup>
+				<Row className="justify-content-center">
+					<Col md={8} lg={6}>
+						<h1 className="text-center mb-4">Restaurant Chatbot</h1>
+						<div className="chat-container">
+							<ListGroup>
+								{prevMsgs &&
+									prevMsgs.map((message, index) => (
+										<ListGroup.Item key={index}>
+											<div style={{ whiteSpace: "pre-line" }}>{message}</div>
+										</ListGroup.Item>
+									))}
+								{messages.map((message, index) => (
+									<ListGroup.Item key={index}>
+										<div style={{ whiteSpace: "pre-line" }}>{message}</div>
+									</ListGroup.Item>
+								))}
+							</ListGroup>
+							<div ref={messagesEndRef}></div>
+						</div>
 						<Form onSubmit={handleSubmit} className="mt-3">
 							<Form.Group>
 								<Form.Control
@@ -96,9 +119,10 @@ const App = () => {
 									placeholder="Type your message here..."
 									value={input}
 									onChange={handleInput}
+									required
 								/>
 							</Form.Group>
-							<Button variant="primary" type="submit">
+							<Button variant="primary" type="submit" className="w-100">
 								Send
 							</Button>
 						</Form>

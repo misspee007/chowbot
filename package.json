@@ -4,8 +4,9 @@
   "description": "A restaurant chatbot that will assist customers in placing orders for their preferred meals.",
   "main": "index.js",
   "scripts": {
+    "build": "cd frontend && npm install && npm run build",
+    "start": "cd backend && npm install && node index.js"
   },
-  "keywords": [],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/misspee007/chowbot"

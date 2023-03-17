@@ -1,31 +1,32 @@
-const express = require("express");
-const path = require("path");
 const http = require("http");
 const { Server } = require("socket.io");
+
+const app = require("./app");
+const database = require("./src/database/db");
+const sessionMiddleware = require("./src/middleware/session");
 const config = require("./src/config");
+const { corsConfig, wrap } = require("./src/controllers/server.controller");
+const OrderingSession = require("./src/components/OrderingSession");
 
-const OrderingSession = require("./src/OrderingSession");
-
-const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-	cors: {
-		origin: "*",
-	},
+	cors: corsConfig,
 });
 
-const rootDir = path.resolve("../");
-app.use(express.static(path.join(rootDir, "frontend", "dist")));
+io.use(wrap(sessionMiddleware));
 
-app.get("/", (req, res) => {
-	res.sendFile(path.join(rootDir, "frontend", "dist", "index.html"));
-});
-
+// connect to database
+database.connect(config.MONGODB_URI);
 
 io.on("connection", (socket) => {
-  console.log("a user connected");
+	console.log("a user connected: ", socket.id);
 
-  const orderingSession = new OrderingSession(socket);
+	const orderingSession = new OrderingSession(socket);
+
+	// handle errors
+	socket.on("error", (err) => {
+		throw new Error(err);
+	});
 
 	socket.on("disconnect", () => {
 		console.log("user disconnected");
@@ -33,5 +34,5 @@ io.on("connection", (socket) => {
 });
 
 server.listen(config.PORT, () => {
-	console.log(`listening on *:${config.PORT}`);
+	console.log(`listening on port ${config.PORT}`);
 });
