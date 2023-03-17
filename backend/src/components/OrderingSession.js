@@ -1,31 +1,6 @@
 const { uuid } = require("uuidv4");
-const { UserModel, ChatModel, MenuModel } = require("../models");
-
-const ORDER_STATUS = {
-	PENDING: "pending",
-	CONFIRMED: "confirmed",
-	CANCELLED: "cancelled",
-	NONE: "none",
-};
-
-async function getMenu() {
-	try {
-		const menu = await MenuModel.find();
-		return menu;
-	} catch (err) {
-		console.log("Error getting menu: ", err);
-		throw new Error(err);
-	}
-}
-
-class OrderingSessionEvent {
-	constructor({ data, eventName, message, isBot }) {
-		this.data = data;
-		this.eventName = eventName;
-		this.message = message;
-		this.isBot = isBot;
-	}
-}
+const { UserModel, ChatModel } = require("../models");
+const { parseOrder, parseOrderHistory, getMenu, ORDER_STATUS, OrderingSessionEvent } = require("../utils/orderSession.utils");
 
 class OrderingSession {
 	constructor(socket) {
@@ -99,7 +74,6 @@ class OrderingSession {
 			const oldUser = await UserModel.findOne({ userId: this.userId }).populate(
 				"orders"
 			);
-			// .populate("chatHistory");
 			return oldUser;
 		} catch (err) {
 			console.log("Error finding user: ", err);
@@ -152,12 +126,14 @@ class OrderingSession {
 			isBot,
 		});
 		this.emitEvent(newEvent);
+
 		this.saveMsg(message, true)
 			.then(() => {
 				console.log("Saved chat history");
 			})
 			.catch((err) => {
 				console.log("Error saving chat history: ", err);
+				console.log("");
 				throw new Error(err);
 			});
 	}
@@ -185,6 +161,16 @@ class OrderingSession {
 	}
 
 	handleMessage(message) {
+		if (!message || message.trim().length === 0) {
+			console.log("Invalid message: ", message);
+			this.emitOrderingEvent({
+				message: "Invalid message. Please try again.",
+				eventName: "message",
+				isBot: true,
+			});
+			return;
+		}
+
 		this.emitOrderingEvent({
 			message: message,
 			eventName: "message",
@@ -240,7 +226,13 @@ class OrderingSession {
 		return message;
 	}
 
-	async handleMenuOption(option) {
+	handleMenuOption(option) {
+		this.emitOrderingEvent({
+			message: option,
+			eventName: "message",
+			isBot: false,
+		});
+
 		const selectedOption = Number(option);
 		const item = this.menu[selectedOption - 1];
 
@@ -265,7 +257,7 @@ class OrderingSession {
 				`${item.name} added to order. Please select another item from the menu:`
 			);
 		} else if (selectedOption === 0) {
-			this.init();
+			this.init("Here you go...");
 		} else {
 			this.emitOrderingEvent({
 				message: "Invalid option. Please try again.",
@@ -293,7 +285,7 @@ class OrderingSession {
 		}
 
 		this.handleOrder();
-		this.init();
+		this.init("You can place another order or view your order history.");
 	}
 
 	handleOrder() {
@@ -309,10 +301,14 @@ class OrderingSession {
 		};
 		this.socket.request.session.orderStatus = ORDER_STATUS.NONE;
 		this.socket.request.session.currentOrder = [];
-		this.socket.request.session.orders = [
-			...this.socket.request.session.orders,
-			order,
-		];
+		if (!Array.isArray(this.socket.request.session.orders)) {
+			this.socket.request.session.orders = [order];
+		} else {
+			this.socket.request.session.orders = [
+				...this.socket.request.session.orders,
+				order,
+			];
+		}
 		this.saveSession();
 
 		this.emitOrderingEvent({
@@ -323,21 +319,16 @@ class OrderingSession {
 	}
 
 	showOrderHistory() {
-		let message = "";
+		let message = ``;
 		this.findUser()
 			.then((user) => {
 				if (user.orders.length) {
-					this.emitOrderingEvent({
-						eventName: "orders",
-						data: user.orders,
-					});
-					message = "0. Go back";
+					message += parseOrderHistory(user.orders);
 				} else {
-					message = `It appears you have not placed any orders recently. Please select 0 to go back to the main menu.
-
-      0. Go back
+					message += `It appears you have not placed any orders recently. Please select 0 to go back to the main menu.
       `;
 				}
+        message += `0. Go to main menu`;
 
 				this.emitOrderingEvent({
 					message: message,
@@ -355,14 +346,19 @@ class OrderingSession {
 	}
 
 	showCurrentOrder() {
-		if (this.socket.request.session.orderStatus !== ORDER_STATUS.PENDING) {
-			this.init("No order in progress!");
-			return;
+		if (
+			!this.socket.request.session.orderStatus ||
+			this.socket.request.session.orderStatus !== ORDER_STATUS.PENDING
+		) {
+			return this.init("No order in progress!");
 		}
 
+		const message = parseOrder(this.socket.request.session.currentOrder);
+
 		this.emitOrderingEvent({
-			eventName: "order",
-			data: this.socket.request.session.currentOrder,
+			message: message,
+			eventName: "message",
+			isBot: true,
 		});
 		this.emitOrderingEvent({
 			message: "0. Go back",
@@ -376,8 +372,7 @@ class OrderingSession {
 
 	cancelOrder() {
 		if (this.socket.request.session.orderStatus !== ORDER_STATUS.PENDING) {
-			this.init("No order in progress!");
-			return;
+			return this.init("No order in progress!");
 		}
 
 		const date = new Date();
@@ -392,10 +387,15 @@ class OrderingSession {
 		};
 		this.socket.request.session.orderStatus = ORDER_STATUS.NONE;
 		this.socket.request.session.currentOrder = [];
-		this.socket.request.session.orders = [
-			...this.socket.request.session.orders,
-			order,
-		];
+		if (!Array.isArray(this.socket.request.session.orders)) {
+			this.socket.request.session.orders = [order];
+		} else {
+			this.socket.request.session.orders = [
+				...this.socket.request.session.orders,
+				order,
+			];
+		}
+		this.saveSession();
 
 		this.init("Order cancelled!");
 	}

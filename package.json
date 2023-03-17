@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "cd frontend && npm install && npm run build",
-    "start": "cd backend && npm install && node index.js"
+    "start": "cd backend && npm install && node server.js"
   },
   "repository": {
     "type": "git",

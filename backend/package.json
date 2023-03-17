@@ -2,9 +2,9 @@
   "name": "chowbot_api",
   "version": "1.0.0",
   "description": "This is the API for the Chowbot project.",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node server.js",
     "seed": "node ./src/database/seeder.js"
   },
   "keywords": [],
