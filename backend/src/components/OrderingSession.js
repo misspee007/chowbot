@@ -99,7 +99,6 @@ class OrderingSession {
 			const oldUser = await UserModel.findOne({ userId: this.userId }).populate(
 				"orders"
 			);
-			// .populate("chatHistory");
 			return oldUser;
 		} catch (err) {
 			console.log("Error finding user: ", err);
@@ -158,6 +157,7 @@ class OrderingSession {
 			})
 			.catch((err) => {
 				console.log("Error saving chat history: ", err);
+				console.log("");
 				throw new Error(err);
 			});
 	}
@@ -185,6 +185,16 @@ class OrderingSession {
 	}
 
 	handleMessage(message) {
+		if (!message || message.trim().length === 0) {
+      console.log("Invalid message: ", message);
+			this.emitOrderingEvent({
+				message: "Invalid message. Please try again.",
+				eventName: "message",
+				isBot: true,
+			});
+			return;
+		}
+
 		this.emitOrderingEvent({
 			message: message,
 			eventName: "message",
@@ -240,7 +250,13 @@ class OrderingSession {
 		return message;
 	}
 
-	async handleMenuOption(option) {
+	handleMenuOption(option) {
+		this.emitOrderingEvent({
+			message: option,
+			eventName: "message",
+			isBot: false,
+		});
+
 		const selectedOption = Number(option);
 		const item = this.menu[selectedOption - 1];
 
@@ -265,7 +281,7 @@ class OrderingSession {
 				`${item.name} added to order. Please select another item from the menu:`
 			);
 		} else if (selectedOption === 0) {
-			this.init();
+			this.init("Here you go...");
 		} else {
 			this.emitOrderingEvent({
 				message: "Invalid option. Please try again.",
@@ -293,7 +309,7 @@ class OrderingSession {
 		}
 
 		this.handleOrder();
-		this.init();
+		this.init("You can place another order or view your order history.");
 	}
 
 	handleOrder() {
