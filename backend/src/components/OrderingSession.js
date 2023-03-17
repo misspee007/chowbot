@@ -183,7 +183,10 @@ class OrderingSession {
 	}
 
 	handleMessage(message) {
+    console.log("Message: ", message, typeof message);
 		const selectedOption = Number(message);
+    console.log("Selected option: ", selectedOption, typeof selectedOption);
+
 		switch (selectedOption) {
 			case 1:
 				this.displayMenu("Please select an item:")
