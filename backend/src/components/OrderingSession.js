@@ -1,4 +1,4 @@
-const { uuid } = require('uuidv4');
+const { uuid } = require("uuidv4");
 const { UserModel, ChatModel, MenuModel } = require("../models");
 
 const ORDER_STATUS = {
@@ -44,12 +44,36 @@ class OrderingSession {
 			this.userId = uuid();
 			this.socket.request.session.userId = this.userId;
 			this.saveSession();
-			this.user = this.createUser();
+
+			this.createUser()
+				.then((user) => {
+					this.user = user;
+				})
+				.catch((err) => {
+					console.log("Error creating user: ", err);
+					throw new Error(err);
+				});
+
 			this.init("Welcome to Chowbot!");
 		} else {
-			this.user = this.findUser();
-			this.getChatHistory();
-			console.log("User exists: ", this.user);
+			this.findUser()
+				.then((user) => {
+					this.user = user;
+				})
+				.catch((err) => {
+					console.log("Error finding user: ", err);
+					throw new Error(err);
+				});
+
+			this.getChatHistory()
+				.then((msgs) => {
+					this.chatHistory = msgs;
+					this.emitChatHistory(msgs);
+				})
+				.catch((err) => {
+					console.log("Error getting chat history: ", err);
+					throw new Error(err);
+				});
 
 			this.init("Welcome back to Chowbot!");
 		}
@@ -78,9 +102,10 @@ class OrderingSession {
 
 	async findUser() {
 		try {
-			const oldUser = await UserModel.findOne({ userId: this.userId })
-				.populate("orders")
-				.populate("chatHistory");
+			const oldUser = await UserModel.findOne({ userId: this.userId }).populate(
+				"orders"
+			);
+			// .populate("chatHistory");
 			return oldUser;
 		} catch (err) {
 			console.log("Error finding user: ", err);
@@ -90,9 +115,11 @@ class OrderingSession {
 
 	async getChatHistory() {
 		const msgs = await ChatModel.find({ user: this.user._id });
-		this.chatHistory = msgs;
+		return msgs;
+	}
 
-		this.chatHistory.forEach((chat) => {
+	emitChatHistory(msgs) {
+		msgs.forEach((chat) => {
 			this.emitOrderingEvent({
 				message: chat.message,
 				eventName: "message",
@@ -131,7 +158,14 @@ class OrderingSession {
 			isBot: true,
 		});
 		this.emitEvent(newEvent);
-		this.saveMsg(message, true);
+		this.saveMsg(message, true)
+			.then(() => {
+				console.log("Saved chat history");
+			})
+			.catch((err) => {
+				console.log("Error saving chat history: ", err);
+				throw new Error(err);
+			});
 	}
 
 	init(heading) {
@@ -159,7 +193,20 @@ class OrderingSession {
 		const selectedOption = Number(message);
 		switch (selectedOption) {
 			case 1:
-				this.displayMenu("Please select an item:");
+				this.displayMenu("Please select an item:")
+					.then((message) => {
+						this.emitOrderingEvent({
+							message: message,
+							eventName: "menu",
+						});
+						this.socket.once("menu", (option) => {
+							this.handleMenuOption(option);
+						});
+					})
+					.catch((err) => {
+						console.log("Error displaying menu: ", err);
+						throw new Error(err);
+					});
 				break;
 			case 99:
 				this.checkout();
@@ -182,21 +229,21 @@ class OrderingSession {
 		}
 	}
 
-	displayMenu(heading) {
+	async displayMenu(heading) {
 		let message = `${heading || ""}
     `;
-		menu.forEach((item, index) => {
-			message += `${index + 1}. ${item.name} - ${item.price}
+		try {
+			const menu = await getMenu();
+			menu.forEach((item, index) => {
+				message += `${index + 1}. ${item.name} - ${item.price}
       `;
-		});
-		message += `0. Go to main menu`;
-		this.emitOrderingEvent({
-			message: message,
-			eventName: "menu",
-		});
-		this.socket.once("menu", (option) => {
-			this.handleMenuOption(option);
-		});
+			});
+			message += `0. Go to main menu`;
+			return message;
+		} catch (err) {
+			console.log("Error getting menu: ", err);
+			throw new Error(err);
+		}
 	}
 
 	handleMenuOption(option) {
@@ -222,7 +269,20 @@ class OrderingSession {
 
 			this.displayMenu(
 				`${item.name} added to order. Please select another item from the menu:`
-			);
+			)
+				.then((message) => {
+					this.emitOrderingEvent({
+						message: message,
+						eventName: "menu",
+					});
+					this.socket.once("menu", (option) => {
+						this.handleMenuOption(option);
+					});
+				})
+				.catch((err) => {
+					console.log("Error displaying menu: ", err);
+					throw new Error(err);
+				});
 		} else if (selectedOption === 0) {
 			this.init();
 		} else {
@@ -278,32 +338,35 @@ class OrderingSession {
 		});
 	}
 
-	async showOrderHistory() {
-		const user = await UserModel.findOne({ userId: this.userId }).populate(
-			"orders"
-		);
+	showOrderHistory() {
 		let message = "";
-
-		if (user.orders.length) {
-			this.emitOrderingEvent({
-				eventName: "orders",
-				data: user.orders,
-			});
-			message = "0. Go back";
-		} else {
-			message = `It appears you have not placed any orders recently. Please select 0 to go back to the main menu.
+		this.findUser()
+			.then((user) => {
+				if (user.orders.length) {
+					this.emitOrderingEvent({
+						eventName: "orders",
+						data: user.orders,
+					});
+					message = "0. Go back";
+				} else {
+					message = `It appears you have not placed any orders recently. Please select 0 to go back to the main menu.
 
       0. Go back
       `;
-		}
+				}
 
-		this.emitOrderingEvent({
-			message: message,
-			eventName: "menu",
-		});
-		this.socket.once("menu", (option) => {
-			this.handleMenuOption(option);
-		});
+				this.emitOrderingEvent({
+					message: message,
+					eventName: "menu",
+				});
+				this.socket.once("menu", (option) => {
+					this.handleMenuOption(option);
+				});
+			})
+			.catch((err) => {
+				console.log("Error finding user: ", err);
+				throw new Error(err);
+			});
 	}
 
 	showCurrentOrder() {

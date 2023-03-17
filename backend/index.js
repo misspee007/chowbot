@@ -23,10 +23,17 @@ io.on("connection", (socket) => {
 
 	const orderingSession = new OrderingSession(socket);
 
-  // save message to database
+	// save message to database
 	socket.on("saveMsg", ({ message, isBot }) => {
-		orderingSession.saveMsg(message, isBot);
-		console.log("chat saved");
+		orderingSession
+			.saveMsg(message, isBot)
+			.then(() => {
+				console.log("chat saved");
+			})
+			.catch((err) => {
+				console.log("Error saving chat history: ", err);
+				throw new Error(err);
+			});
 	});
 
 	// handle errors
