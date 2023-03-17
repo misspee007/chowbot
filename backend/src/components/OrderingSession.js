@@ -18,8 +18,6 @@ async function getMenu() {
 	}
 }
 
-const menu = getMenu();
-
 class OrderingSessionEvent {
 	constructor({ data, eventName, message, isBot }) {
 		this.data = data;
@@ -32,6 +30,9 @@ class OrderingSessionEvent {
 class OrderingSession {
 	constructor(socket) {
 		this.socket = socket;
+		getMenu().then((menu) => {
+			this.menu = menu;
+		});
 
 		this.socket.request.session.active = true;
 		this.saveSession();
@@ -187,21 +188,7 @@ class OrderingSession {
 
 		switch (selectedOption) {
 			case 1:
-				this.displayMenu("Please select an item:")
-					.then((message) => {
-						this.emitOrderingEvent({
-							message: message,
-							eventName: "menu",
-						});
-						this.socket.once("menu", (option) => {
-              const parsedOption = Number(option);
-							this.handleMenuOption(parsedOption);
-						});
-					})
-					.catch((err) => {
-						console.log("Error displaying menu: ", err);
-						throw new Error(err);
-					});
+				this.displayMenu("Please select an item:");
 				break;
 			case 99:
 				this.checkout();
@@ -224,26 +211,29 @@ class OrderingSession {
 		}
 	}
 
-	async displayMenu(heading) {
+	displayMenu(heading) {
 		let message = `${heading || ""}
     `;
-		try {
-			const menu = await getMenu();
-			menu.forEach((item, index) => {
-				message += `${index + 1}. ${item.name} - ${item.price}
+
+		this.menu.forEach((item, index) => {
+			message += `${index + 1}. ${item.name} - ${item.price}
       `;
-			});
-			message += `0. Go to main menu`;
-			return message;
-		} catch (err) {
-			console.log("Error getting menu: ", err);
-			throw new Error(err);
-		}
+		});
+		message += `0. Go to main menu`;
+
+		this.emitOrderingEvent({
+			message: message,
+			eventName: "menu",
+		});
+		this.socket.once("menu", (option) => {
+			this.handleMenuOption(option);
+		});
+		return message;
 	}
 
-	handleMenuOption(option) {
+	async handleMenuOption(option) {
 		const selectedOption = Number(option);
-		const item = menu[selectedOption - 1];
+		const item = this.menu[selectedOption - 1];
 
 		if (item) {
 			// if this is the first item in the order, set order status
@@ -264,20 +254,7 @@ class OrderingSession {
 
 			this.displayMenu(
 				`${item.name} added to order. Please select another item from the menu:`
-			)
-				.then((message) => {
-					this.emitOrderingEvent({
-						message: message,
-						eventName: "menu",
-					});
-					this.socket.once("menu", (option) => {
-						this.handleMenuOption(option);
-					});
-				})
-				.catch((err) => {
-					console.log("Error displaying menu: ", err);
-					throw new Error(err);
-				});
+			);
 		} else if (selectedOption === 0) {
 			this.init();
 		} else {
