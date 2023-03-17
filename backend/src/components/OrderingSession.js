@@ -44,7 +44,7 @@ class OrderingSession {
 			this.userId = uuid();
 			this.socket.request.session.userId = this.userId;
 			this.saveSession();
-			this.createUser();
+			this.user = this.createUser();
 			this.init("Welcome to Chowbot!");
 		} else {
 			this.user = this.findUser();
