@@ -71,9 +71,7 @@ class OrderingSession {
 
 	async findUser() {
 		try {
-			const oldUser = await UserModel.findOne({ userId: this.userId }).populate(
-				"orders"
-			);
+			const oldUser = await UserModel.findOne({ userId: this.userId });
 			return oldUser;
 		} catch (err) {
 			console.log("Error finding user: ", err);
@@ -285,10 +283,10 @@ class OrderingSession {
 		}
 
 		this.handleOrder();
-		this.init("You can place another order or view your order history.");
+		this.init("Order placed successfully! What would you like to do next?");
 	}
 
-	handleOrder() {
+	async handleOrder() {
 		const date = new Date();
 		const order = {
 			status: ORDER_STATUS.CONFIRMED,
@@ -311,11 +309,11 @@ class OrderingSession {
 		}
 		this.saveSession();
 
-		this.emitOrderingEvent({
-			message: "Order placed successfully!",
-			eventName: "message",
-			isBot: true,
-		});
+    await this.user.updateOne({
+      $push: {
+        orders: order,
+      },
+    });
 	}
 
 	showOrderHistory() {
@@ -328,7 +326,7 @@ class OrderingSession {
 					message += `It appears you have not placed any orders recently. Please select 0 to go back to the main menu.
       `;
 				}
-        message += `0. Go to main menu`;
+        message += `0. Go back to main menu`;
 
 				this.emitOrderingEvent({
 					message: message,
@@ -357,11 +355,6 @@ class OrderingSession {
 
 		this.emitOrderingEvent({
 			message: message,
-			eventName: "message",
-			isBot: true,
-		});
-		this.emitOrderingEvent({
-			message: "0. Go back",
 			eventName: "menu",
 			isBot: true,
 		});
@@ -397,7 +390,7 @@ class OrderingSession {
 		}
 		this.saveSession();
 
-		this.init("Order cancelled!");
+		this.init("Order cancelled! Would you like to do anything else?");
 	}
 }
 

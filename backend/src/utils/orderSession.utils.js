@@ -1,39 +1,43 @@
-const { MenuModel } = require("../models");
+const { MenuModel, ChatModel } = require("../models");
 
 function parseOrderHistory(orders) {
-  let msg = `Order History:
+	let msg = `Order History:
+
   `;
 
-  orders.forEach((order) => {
-    msg += `Date: ${order.date}
-    Order ID: ${order.id} - ${order.status}
-    Date: ${order.date}
-    Order ID: ${order.id} - ${order.status}`;
+	orders.forEach((order) => {
+		msg += `Date: ${order.date}
+    Order ID: ${order.id}
+    Status: ${order.status}
+    `;
 
-    order.items.forEach((item, index) => {
-      msg += `${index + 1}. ${item.name} - ₦${item.price} x ${item.qty}`;
-    });
+		order.items.forEach((item, index) => {
+			msg += `${index + 1}. ${item.name} - ₦${item.price} x ${item.qty}
+      `;
+		});
 
-    msg += `Total: ₦${order.total}`;
-  });
+		msg += `Total: ₦${order.total}
 
-  return msg;
+    `;
+	});
+
+	return msg;
 }
 
 function parseOrder(order) {
-  let msg = `Current Order:
+	let msg = `Current Order:
+
   `;
 
-  order.forEach((item, index) => {
-    msg += `${index + 1}. ${item.name} - ₦${item.price} x ${item.qty}`;
-  });
+	order.forEach((item, index) => {
+		msg += `${index + 1}. ${item.name} - ₦${item.price} x ${item.qty}
+    `;
+	});
 
-  msg += `Total: ₦${order.reduce(
-    (acc, item) => acc + item.price * item.qty,
-    0
-  )}`;
-
-  return msg;
+	msg += `Total: ₦${order.reduce((acc, item) => acc + item.price * item.qty, 0)}
+  `;
+	msg += `0. Go back to main menu`;
+	return msg;
 }
 
 async function getMenu() {
@@ -63,9 +67,9 @@ class OrderingSessionEvent {
 }
 
 module.exports = {
-  parseOrderHistory,
-  parseOrder,
-  getMenu,
-  ORDER_STATUS,
-  OrderingSessionEvent
+	parseOrderHistory,
+	parseOrder,
+	getMenu,
+	ORDER_STATUS,
+	OrderingSessionEvent,
 };
