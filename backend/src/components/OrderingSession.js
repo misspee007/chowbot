@@ -144,12 +144,12 @@ class OrderingSession {
 		this.socket.emit(event.eventName, event);
 	}
 
-	emitOrderingEvent({ message, data, eventName }) {
+	emitOrderingEvent({ message, data, eventName, isBot }) {
 		const newEvent = this.createOrderingEvent({
 			message,
 			data,
 			eventName,
-			isBot: true,
+			isBot,
 		});
 		this.emitEvent(newEvent);
 		this.saveMsg(message, true)
@@ -176,6 +176,7 @@ class OrderingSession {
 		this.emitOrderingEvent({
 			message: message,
 			eventName: "message",
+			isBot: true,
 		});
 
 		this.socket.once("message", (message) => {
@@ -184,6 +185,12 @@ class OrderingSession {
 	}
 
 	handleMessage(message) {
+		this.emitOrderingEvent({
+			message: message,
+			eventName: "message",
+			isBot: false,
+		});
+
 		const selectedOption = Number(message);
 
 		switch (selectedOption) {
@@ -206,6 +213,7 @@ class OrderingSession {
 				this.emitOrderingEvent({
 					message: "Invalid option. Please try again.",
 					eventName: "message",
+					isBot: true,
 				});
 				break;
 		}
@@ -224,6 +232,7 @@ class OrderingSession {
 		this.emitOrderingEvent({
 			message: message,
 			eventName: "menu",
+			isBot: true,
 		});
 		this.socket.once("menu", (option) => {
 			this.handleMenuOption(option);
@@ -261,6 +270,7 @@ class OrderingSession {
 			this.emitOrderingEvent({
 				message: "Invalid option. Please try again.",
 				eventName: "message",
+				isBot: true,
 			});
 		}
 	}
@@ -277,6 +287,7 @@ class OrderingSession {
 			this.emitOrderingEvent({
 				message: message,
 				eventName: "message",
+				isBot: true,
 			});
 			return;
 		}
@@ -307,6 +318,7 @@ class OrderingSession {
 		this.emitOrderingEvent({
 			message: "Order placed successfully!",
 			eventName: "message",
+			isBot: true,
 		});
 	}
 
@@ -330,6 +342,7 @@ class OrderingSession {
 				this.emitOrderingEvent({
 					message: message,
 					eventName: "menu",
+					isBot: true,
 				});
 				this.socket.once("menu", (option) => {
 					this.handleMenuOption(option);
@@ -354,6 +367,7 @@ class OrderingSession {
 		this.emitOrderingEvent({
 			message: "0. Go back",
 			eventName: "menu",
+			isBot: true,
 		});
 		this.socket.once("menu", (option) => {
 			this.handleMenuOption(option);
