@@ -1,31 +1,6 @@
 const { uuid } = require("uuidv4");
-const { UserModel, ChatModel, MenuModel } = require("../models");
-
-const ORDER_STATUS = {
-	PENDING: "pending",
-	CONFIRMED: "confirmed",
-	CANCELLED: "cancelled",
-	NONE: "none",
-};
-
-async function getMenu() {
-	try {
-		const menu = await MenuModel.find();
-		return menu;
-	} catch (err) {
-		console.log("Error getting menu: ", err);
-		throw new Error(err);
-	}
-}
-
-class OrderingSessionEvent {
-	constructor({ data, eventName, message, isBot }) {
-		this.data = data;
-		this.eventName = eventName;
-		this.message = message;
-		this.isBot = isBot;
-	}
-}
+const { UserModel, ChatModel } = require("../models");
+const { parseOrder, parseOrderHistory, getMenu, ORDER_STATUS, OrderingSessionEvent } = require("../utils/orderSession.utils");
 
 class OrderingSession {
 	constructor(socket) {
@@ -151,6 +126,7 @@ class OrderingSession {
 			isBot,
 		});
 		this.emitEvent(newEvent);
+
 		this.saveMsg(message, true)
 			.then(() => {
 				console.log("Saved chat history");
@@ -343,21 +319,16 @@ class OrderingSession {
 	}
 
 	showOrderHistory() {
-		let message = "";
+		let message = ``;
 		this.findUser()
 			.then((user) => {
 				if (user.orders.length) {
-					this.emitOrderingEvent({
-						eventName: "orders",
-						data: user.orders,
-					});
-					message = "0. Go back";
+					message += parseOrderHistory(user.orders);
 				} else {
-					message = `It appears you have not placed any orders recently. Please select 0 to go back to the main menu.
-
-      0. Go back
+					message += `It appears you have not placed any orders recently. Please select 0 to go back to the main menu.
       `;
 				}
+        message += `0. Go to main menu`;
 
 				this.emitOrderingEvent({
 					message: message,
@@ -382,11 +353,12 @@ class OrderingSession {
 			return this.init("No order in progress!");
 		}
 
-		console.log("current order is: ", this.socket.request.session.currentOrder);
+		const message = parseOrder(this.socket.request.session.currentOrder);
 
 		this.emitOrderingEvent({
-			eventName: "order",
-			data: this.socket.request.session.currentOrder,
+			message: message,
+			eventName: "message",
+			isBot: true,
 		});
 		this.emitOrderingEvent({
 			message: "0. Go back",
@@ -423,7 +395,7 @@ class OrderingSession {
 				order,
 			];
 		}
-    this.saveSession();
+		this.saveSession();
 
 		this.init("Order cancelled!");
 	}

@@ -34,14 +34,6 @@ const App = () => {
 			setMessages((messages) => [...messages, menu.message]);
 			setEventName(menu.eventName);
 		});
-
-		socket.on("orders", (orders) => {
-			parseOrderHistory(orders.data);
-		});
-
-		socket.on("order", (order) => {
-			parseOrder(order.data);
-		});
 	}, []);
 
 	useEffect(() => {
@@ -57,38 +49,6 @@ const App = () => {
 		socket.emit(eventName, input);
 		setInput("");
 	};
-
-	function parseOrderHistory(orders) {
-		setMessages((messages) => [...messages, "Order History: "]);
-
-		orders.forEach((order) => {
-			setMessages((messages) => [...messages, `Date: ${order.date}`]);
-			setMessages((messages) => [
-				...messages,
-				`Order ID: ${order.id} - ${order.status}`,
-			]);
-
-			order.items.forEach((item, index) => {
-				setMessages((messages) => [
-					...messages,
-					`${index + 1}. ${item.name} - ₦${item.price} x ${item.qty}`,
-				]);
-			});
-
-			setMessages((messages) => [...messages, `Total: ₦${order.total}`]);
-		});
-	}
-
-	function parseOrder(order) {
-		setMessages((messages) => [...messages, "Order: "]);
-
-		order.forEach((item, index) => {
-			setMessages((messages) => [
-				...messages,
-				`${index + 1}. ${item.name} - ₦${item.price} x ${item.qty}`,
-			]);
-		});
-	}
 
 	return (
 		<div>
