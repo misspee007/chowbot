@@ -24,7 +24,7 @@ class OrderingSession {
 			this.createUser()
 				.then((user) => {
 					this.user = user;
-					this.init("Welcome to Chowbot!");
+					this.init("Hi! I'm Chowbot. How can I help you?");
 				})
 				.catch((err) => {
 					console.log("Error creating user: ", err);
@@ -39,7 +39,7 @@ class OrderingSession {
 				.then((msgs) => {
 					this.chatHistory = msgs;
 					this.emitChatHistory(msgs);
-					this.init("Welcome back to Chowbot!");
+					this.init("Welcome back! How can I help you?");
 				})
 				.catch((err) => {
 					console.log("Error: ", err);
@@ -137,7 +137,7 @@ class OrderingSession {
 	}
 
 	init(heading) {
-		const message = `${heading || ""}
+		const message = `Chowbot: ${heading || ""}
 
     Please select an option:
     1. Place an order
@@ -162,7 +162,7 @@ class OrderingSession {
 		if (!message || message.trim().length === 0) {
 			console.log("Invalid message: ", message);
 			this.emitOrderingEvent({
-				message: "Invalid message. Please try again.",
+				message: "Chowbot: Invalid message. Please try again.",
 				eventName: "message",
 				isBot: true,
 			});
@@ -195,7 +195,7 @@ class OrderingSession {
 				break;
 			default:
 				this.emitOrderingEvent({
-					message: "Invalid option. Please try again.",
+					message: "Chowbot: Invalid option. Please try again.",
 					eventName: "message",
 					isBot: true,
 				});
@@ -204,7 +204,8 @@ class OrderingSession {
 	}
 
 	displayMenu(heading) {
-		let message = `${heading || ""}
+		let message = `Chowbot: ${heading || ""}
+    
     `;
 
 		this.menu.forEach((item, index) => {
@@ -226,7 +227,7 @@ class OrderingSession {
 
 	handleMenuOption(option) {
 		this.emitOrderingEvent({
-			message: option,
+			message: `You: ${option}`,
 			eventName: "message",
 			isBot: false,
 		});
@@ -258,7 +259,7 @@ class OrderingSession {
 			this.init("Here you go...");
 		} else {
 			this.emitOrderingEvent({
-				message: "Invalid option. Please try again.",
+				message: "Chowbot: Invalid option. Please try again.",
 				eventName: "message",
 				isBot: true,
 			});
@@ -268,7 +269,7 @@ class OrderingSession {
 	checkout() {
 		// if there is no pending order, display error message, else proceed to checkout
 		if (this.socket.request.session.orderStatus !== ORDER_STATUS.PENDING) {
-			let message = `No order to place!
+			let message = `Chowbot: No order to place!
       Please select an option:
       1. Place an order
       98. View order history
@@ -323,7 +324,7 @@ class OrderingSession {
 				if (user.orders.length) {
 					message += parseOrderHistory(user.orders);
 				} else {
-					message += `It appears you have not placed any orders recently. Please select 0 to go back to the main menu.
+					message += `Chowbot: It appears you have not placed any orders recently. Please select 0 to go back to the main menu.
       `;
 				}
         message += `0. Go back to main menu`;

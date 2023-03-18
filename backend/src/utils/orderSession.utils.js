@@ -1,7 +1,7 @@
-const { MenuModel, ChatModel } = require("../models");
+const { MenuModel } = require("../models");
 
 function parseOrderHistory(orders) {
-	let msg = `Order History:
+	let msg = `Chowbot: Here's your order history:
 
   `;
 
@@ -25,7 +25,7 @@ function parseOrderHistory(orders) {
 }
 
 function parseOrder(order) {
-	let msg = `Current Order:
+	let msg = `Chowbot: Here's your pending order:
 
   `;
 
