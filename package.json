@@ -16,5 +16,9 @@
   },
   "homepage": "https://github.com/misspee007/chowbot#readme",
   "author": "Precious Abubakar",
-  "license": "ISC"
+  "license": "ISC",
+  "cacheDirectories": ["backend/node_modules", "frontend/node_modules"],
+  "engines": {
+    "node": "18.x"
+  }
 }
