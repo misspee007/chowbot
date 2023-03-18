@@ -35,8 +35,9 @@ function parseOrder(order) {
 	});
 
 	msg += `Total: ₦${order.reduce((acc, item) => acc + item.price * item.qty, 0)}
+
   `;
-	msg += `0. Go back to main menu`;
+	msg += `Select 0 to go back to main menu`;
 	return msg;
 }
 

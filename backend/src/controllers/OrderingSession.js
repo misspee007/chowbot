@@ -1,6 +1,12 @@
 const { uuid } = require("uuidv4");
 const { UserModel, ChatModel } = require("../models");
-const { parseOrder, parseOrderHistory, getMenu, ORDER_STATUS, OrderingSessionEvent } = require("../utils/orderSession.utils");
+const {
+	parseOrder,
+	parseOrderHistory,
+	getMenu,
+	ORDER_STATUS,
+	OrderingSessionEvent,
+} = require("../utils/orderSession.utils");
 
 class OrderingSession {
 	constructor(socket) {
@@ -161,16 +167,11 @@ class OrderingSession {
 	handleMessage(message) {
 		if (!message || message.trim().length === 0) {
 			console.log("Invalid message: ", message);
-			this.emitOrderingEvent({
-				message: "Chowbot: Invalid message. Please try again.",
-				eventName: "message",
-				isBot: true,
-			});
-			return;
+			return this.init("Invalid message. Please try again.");
 		}
 
 		this.emitOrderingEvent({
-			message: message,
+			message: `You: ${message}`,
 			eventName: "message",
 			isBot: false,
 		});
@@ -194,18 +195,14 @@ class OrderingSession {
 				this.cancelOrder();
 				break;
 			default:
-				this.emitOrderingEvent({
-					message: "Chowbot: Invalid option. Please try again.",
-					eventName: "message",
-					isBot: true,
-				});
+				this.init("Invalid option. Please try again.");
 				break;
 		}
 	}
 
 	displayMenu(heading) {
 		let message = `Chowbot: ${heading || ""}
-    
+
     `;
 
 		this.menu.forEach((item, index) => {
@@ -225,7 +222,7 @@ class OrderingSession {
 		return message;
 	}
 
-	handleMenuOption(option) {
+	handleMenuOption(option, isRetry = false) {
 		this.emitOrderingEvent({
 			message: `You: ${option}`,
 			eventName: "message",
@@ -258,11 +255,9 @@ class OrderingSession {
 		} else if (selectedOption === 0) {
 			this.init("Here you go...");
 		} else {
-			this.emitOrderingEvent({
-				message: "Chowbot: Invalid option. Please try again.",
-				eventName: "message",
-				isBot: true,
-			});
+			return this.displayMenu(
+				"Invalid message. Please select an item from the menu:"
+			);
 		}
 	}
 
@@ -310,11 +305,11 @@ class OrderingSession {
 		}
 		this.saveSession();
 
-    await this.user.updateOne({
-      $push: {
-        orders: order,
-      },
-    });
+		await this.user.updateOne({
+			$push: {
+				orders: order,
+			},
+		});
 	}
 
 	showOrderHistory() {
@@ -327,16 +322,32 @@ class OrderingSession {
 					message += `Chowbot: It appears you have not placed any orders recently. Please select 0 to go back to the main menu.
       `;
 				}
-        message += `0. Go back to main menu`;
+				message += `0. Go back to main menu`;
 
 				this.emitOrderingEvent({
 					message: message,
 					eventName: "menu",
 					isBot: true,
 				});
-				this.socket.once("menu", (option) => {
-					this.handleMenuOption(option);
-				});
+        this.socket.on("menu", (option) => {
+          // validate option
+          switch (option) {
+            case "0":
+              this.handleMenuOption(option);
+              // switch off event listener
+              this.socket.off("menu", () => {
+                console.log("Menu Event listener switched off");
+              });
+              break;
+            default:
+              this.emitOrderingEvent({
+                message: `Chowbot: Invalid option. Please select 0 to go back to the main menu.`,
+                eventName: "menu",
+                isBot: true,
+              });
+              break;
+          }
+        });
 			})
 			.catch((err) => {
 				console.log("Error finding user: ", err);
@@ -359,8 +370,25 @@ class OrderingSession {
 			eventName: "menu",
 			isBot: true,
 		});
-		this.socket.once("menu", (option) => {
-			this.handleMenuOption(option);
+
+		this.socket.on("menu", (option) => {
+      // validate option
+			switch (option) {
+				case "0":
+					this.handleMenuOption(option);
+					// switch off event listener
+					this.socket.off("menu", () => {
+            console.log("Menu Event listener switched off");
+          });
+					break;
+				default:
+					this.emitOrderingEvent({
+						message: `Chowbot: Invalid option. Please select 0 to go back to the main menu.`,
+						eventName: "menu",
+						isBot: true,
+					});
+					break;
+			}
 		});
 	}
 
