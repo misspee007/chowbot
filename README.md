@@ -20,7 +20,16 @@ https://chowbot.onrender.com
 
 ### How it Works
 
-A typical workflow is that the bot will prompt the user to select a meal from the menu, and the bot will create a `pending order` and add the meal to it. The user can then select another meal, proceed to checkout, or view the current (pending) order. If the user proceeds to checkout, they will receive a confirmation message, and the main menu. The customer can then view their order history or perform other actions. Chowbot communicates with the user through a number-based selection system. The bot uses websockets to maintain a bi-directional communication channel between the client and the server. The chat history and other data are managed using session and a NoSQL database.
+Chowbot is easy to use. It will provide the user with a list of options, and the user will select an option by responding with the corresponding number. For example, A typical workflow:
+- Chowbot will prompt the user to select an option from the main menu.
+- The user will select `1` to place an order.
+- Chowbot will prompt the user to select a meal from the menu.
+- The user will select `1` to select the first meal on the menu.
+- Chowbot will prompt the user to select another meal or go back to main menu.
+- The user will select `0` to go back to the main menu.
+- Chowbot will prompt the user to select an option from the main menu.
+- The user will select `99` to proceed to checkout.
+- Chowbot will send a comfirmatory message, and prompt the user to select an option from the main menu.
 
 ---
 ## API
@@ -99,28 +108,28 @@ git clone https://github.com/misspee007/chowbot.git
 ```bash
 cp .env.example .env
 ```
-- Install dependencies and start server
+- Navigate to frontend directory and install dependencies
+```bash
+cd frontend && npm install
+```
+- Run build command
+```bash
+npm run build
+```
+
+The build command will create a `dist` folder in the frontend directory. This folder will be used by the backend server to serve the frontend files.
+
+- Open another terminal, navigate to backend directory, install dependencies and start server
 ```bash
 cd backend && npm install
 npm run start
 ```
-- Open another terminal, install frontend dependencies and start the app
-```bash
-cd frontend && npm install
-npm run dev
-```
-- Go to http://localhost:5173 to view the app.
-
-### Build
-- Run build command
-```bash
-cd frontend
-npm run build
-```
 - Go to http://localhost:\<PORT> to view. The default PORT is 3399.
 
+
 ### Seeding the database
-- Run the seeder script
+- Run the seeder script to clear the database and seed it with menu items.
+
 ```bash
 npm run seed
 ```
@@ -136,7 +145,7 @@ npm run seed
 │   │   │   └── index.js //contains the configuration for the app (i.e initialisation of env variables)
 │   │   ├── database
 │   │   │   ├── db.js //contains the connection to the database
-│   │   │   ├── seeder.js //contains the logic for seeding the database with menu items
+│   │   │   ├── seeder.js //contains the logic for seeding the database. The seeder script will run this file.
 │   │   │   └── index.js
 │   │   ├── middleware
 │   │   │   ├── sentry.js //contains the config for the sentry logging middleware
@@ -146,12 +155,13 @@ npm run seed
 |   |   |   ├── menuModel.js
 |   |   |   ├── userModel.js
 │   │   │   └── index.js
-│   │   ├── utils
-│   │   │   ├── orderSession.utils.js //helper functions and constand data for the ordering session component
-│   │   │   └── server.utils.js //helpers for server.js
+│   │   └── utils
+│   │       ├── orderSession.utils.js //helper functions and constand data for the ordering session component
+│   │       ├── constants.js //contains constants used in the app
+│   │       └── server.utils.js //helpers for server.js
 │   ├── app.js //express app
 │   ├── package-lock.json
-│   ├── package.json
+│   ├── package.json //contains the dependencies for the backend
 │   └── server.js //socket.io server
 ├── frontend
 │   ├── src
@@ -161,15 +171,16 @@ npm run seed
 │   │   └── index.html
 │   ├── vite.config.js
 │   ├── package-lock.json
-│   └── package.json
+│   └── package.json //contains the dependencies for the frontend
 ├── .env.example
 ├── .gitignore
 ├── .node-version //node version, required by the hosting platform, render.com
+├── package.json //contains the scripts for the app used in production. Not recommended for development.
 └── README.md
 ```
 
 ---
-## Tools
+## Main Tools
 - [Nodejs](https://nodejs.org) - Backend runtime
 - [Express](https://expressjs.com) - Backend framework
 - [MongoDB](https://www.mongodb.com) - Database
