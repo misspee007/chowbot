@@ -1,7 +1,7 @@
 // require("dotenv").config();
 const mongoose = require("mongoose");
 const { MenuModel, ChatModel, UserModel } = require("../models");
-const { menuItems } = require("../utils/constants");
+const { menuItems } = require("../utils/constants.utils");
 const config = require("../config");
 
 mongoose

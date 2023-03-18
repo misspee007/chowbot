@@ -29,8 +29,15 @@ app.use(cookieParser());
 const rootDir = path.resolve("../");
 app.use(express.static(path.join(rootDir, "frontend", "src", "dist")));
 
+// ping
+app.get("/ping", (req, res) => {
+  res.status(200).send("pong");
+});
+
 app.get("/", (req, res) => {
-	res.status(200).sendFile(path.join(rootDir, "frontend", "src", "dist", "index.html"));
+	res
+		.status(200)
+		.sendFile(path.join(rootDir, "frontend", "src", "dist", "index.html"));
 });
 
 // To test logger
@@ -49,7 +56,7 @@ app.use(
 app.use(function onError(err, req, res, next) {
 	res.statusCode = 500;
 	res.end(res.sentry + "\n");
-  console.log("error: ", err);
+	console.log("error: ", err);
 });
 
 module.exports = app;
