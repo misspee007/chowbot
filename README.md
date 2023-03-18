@@ -83,7 +83,7 @@ Chowbot is easy to use. It will provide the user with a list of options, and the
 
 #### Client
 | event  |  description |
-|---|---|---|
+|---|---|
 |  message  |  Sends a message to the server |
 | menu |  Sends a message to the server and triggers the server's `handleMenu()` method for processing menu selections |
 
