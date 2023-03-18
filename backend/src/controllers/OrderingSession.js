@@ -1,6 +1,12 @@
 const { uuid } = require("uuidv4");
 const { UserModel, ChatModel } = require("../models");
-const { parseOrder, parseOrderHistory, getMenu, ORDER_STATUS, OrderingSessionEvent } = require("../utils/orderSession.utils");
+const {
+	parseOrder,
+	parseOrderHistory,
+	getMenu,
+	OrderingSessionEvent,
+} = require("../utils/orderSession.utils");
+const { ORDER_STATUS } = require("../utils/constants.utils");
 
 class OrderingSession {
 	constructor(socket) {
@@ -24,7 +30,7 @@ class OrderingSession {
 			this.createUser()
 				.then((user) => {
 					this.user = user;
-					this.init("Welcome to Chowbot!");
+					this.init("Hi! I'm Chowbot. How can I help you?");
 				})
 				.catch((err) => {
 					console.log("Error creating user: ", err);
@@ -39,7 +45,7 @@ class OrderingSession {
 				.then((msgs) => {
 					this.chatHistory = msgs;
 					this.emitChatHistory(msgs);
-					this.init("Welcome back to Chowbot!");
+					this.init("Welcome back! How can I help you?");
 				})
 				.catch((err) => {
 					console.log("Error: ", err);
@@ -137,7 +143,7 @@ class OrderingSession {
 	}
 
 	init(heading) {
-		const message = `${heading || ""}
+		const message = `Chowbot: ${heading || ""}
 
     Please select an option:
     1. Place an order
@@ -159,21 +165,16 @@ class OrderingSession {
 	}
 
 	handleMessage(message) {
-		if (!message || message.trim().length === 0) {
-			console.log("Invalid message: ", message);
-			this.emitOrderingEvent({
-				message: "Invalid message. Please try again.",
-				eventName: "message",
-				isBot: true,
-			});
-			return;
-		}
-
 		this.emitOrderingEvent({
-			message: message,
+			message: `You: ${message}`,
 			eventName: "message",
 			isBot: false,
 		});
+
+		if (!message || message.trim().length === 0) {
+			console.log("Invalid message: ", message);
+			return this.init("Invalid message. Please try again.");
+		}
 
 		const selectedOption = Number(message);
 
@@ -194,17 +195,14 @@ class OrderingSession {
 				this.cancelOrder();
 				break;
 			default:
-				this.emitOrderingEvent({
-					message: "Invalid option. Please try again.",
-					eventName: "message",
-					isBot: true,
-				});
+				this.init("Invalid option. Please try again.");
 				break;
 		}
 	}
 
 	displayMenu(heading) {
-		let message = `${heading || ""}
+		let message = `Chowbot: ${heading || ""}
+
     `;
 
 		this.menu.forEach((item, index) => {
@@ -226,7 +224,7 @@ class OrderingSession {
 
 	handleMenuOption(option) {
 		this.emitOrderingEvent({
-			message: option,
+			message: `You: ${option}`,
 			eventName: "message",
 			isBot: false,
 		});
@@ -236,7 +234,7 @@ class OrderingSession {
 
 		if (item) {
 			// if this is the first item in the order, set order status
-			if (!this.socket.request.session.currentOrder) {
+			if (!this.socket.request.session.orderStatus) {
 				this.socket.request.session.orderStatus = ORDER_STATUS.PENDING;
 				this.socket.request.session.currentOrder = [];
 				this.saveSession();
@@ -257,18 +255,19 @@ class OrderingSession {
 		} else if (selectedOption === 0) {
 			this.init("Here you go...");
 		} else {
-			this.emitOrderingEvent({
-				message: "Invalid option. Please try again.",
-				eventName: "message",
-				isBot: true,
-			});
+			return this.displayMenu(
+				"Invalid message. Please select an item from the menu:"
+			);
 		}
 	}
 
 	checkout() {
 		// if there is no pending order, display error message, else proceed to checkout
-		if (this.socket.request.session.orderStatus !== ORDER_STATUS.PENDING) {
-			let message = `No order to place!
+		if (
+			!this.socket.request.session.orderStatus ||
+			this.socket.request.session.orderStatus !== ORDER_STATUS.PENDING
+		) {
+			let message = `Chowbot: No order to place!
       Please select an option:
       1. Place an order
       98. View order history
@@ -297,7 +296,7 @@ class OrderingSession {
 				0
 			),
 		};
-		this.socket.request.session.orderStatus = ORDER_STATUS.NONE;
+		this.socket.request.session.orderStatus = null;
 		this.socket.request.session.currentOrder = [];
 		if (!Array.isArray(this.socket.request.session.orders)) {
 			this.socket.request.session.orders = [order];
@@ -309,24 +308,26 @@ class OrderingSession {
 		}
 		this.saveSession();
 
-    await this.user.updateOne({
-      $push: {
-        orders: order,
-      },
-    });
+		await this.user.updateOne({
+			$push: {
+				orders: order,
+			},
+		});
 	}
 
-	showOrderHistory() {
+	showOrderHistory(retry) {
 		let message = ``;
 		this.findUser()
 			.then((user) => {
-				if (user.orders.length) {
+				if (retry) {
+					message +=
+						"Chowbot: Invalid option. Please select 0 to go back to the main menu.";
+				} else if (user.orders.length) {
 					message += parseOrderHistory(user.orders);
 				} else {
-					message += `It appears you have not placed any orders recently. Please select 0 to go back to the main menu.
+					message += `Chowbot: It appears you have not placed any orders recently. Please select 0 to go back to the main menu.
       `;
 				}
-        message += `0. Go back to main menu`;
 
 				this.emitOrderingEvent({
 					message: message,
@@ -334,7 +335,20 @@ class OrderingSession {
 					isBot: true,
 				});
 				this.socket.once("menu", (option) => {
-					this.handleMenuOption(option);
+					// validate option
+					switch (option) {
+						case "0":
+							this.handleMenuOption(option);
+							break;
+						default:
+							this.emitOrderingEvent({
+								message: `You: ${option}`,
+								eventName: "message",
+								isBot: false,
+							});
+							this.showOrderHistory(true);
+							break;
+					}
 				});
 			})
 			.catch((err) => {
@@ -343,28 +357,49 @@ class OrderingSession {
 			});
 	}
 
-	showCurrentOrder() {
-		if (
+	showCurrentOrder(retry) {
+		let message = "";
+		if (retry) {
+			message =
+				"Chowbot: Invalid option. Please select 0 to go back to the main menu.";
+		} else if (
 			!this.socket.request.session.orderStatus ||
 			this.socket.request.session.orderStatus !== ORDER_STATUS.PENDING
 		) {
 			return this.init("No order in progress!");
+		} else {
+			message = parseOrder(this.socket.request.session.currentOrder);
 		}
-
-		const message = parseOrder(this.socket.request.session.currentOrder);
 
 		this.emitOrderingEvent({
 			message: message,
 			eventName: "menu",
 			isBot: true,
 		});
+
 		this.socket.once("menu", (option) => {
-			this.handleMenuOption(option);
+			// validate option
+			switch (option) {
+				case "0":
+					this.handleMenuOption(option);
+					break;
+				default:
+					this.emitOrderingEvent({
+						message: `You: ${option}`,
+						eventName: "message",
+						isBot: false,
+					});
+					this.showCurrentOrder(true);
+					break;
+			}
 		});
 	}
 
 	cancelOrder() {
-		if (this.socket.request.session.orderStatus !== ORDER_STATUS.PENDING) {
+		if (
+			!this.socket.request.session.orderStatus ||
+			this.socket.request.session.orderStatus !== ORDER_STATUS.PENDING
+		) {
 			return this.init("No order in progress!");
 		}
 
@@ -378,7 +413,7 @@ class OrderingSession {
 			),
 			items: this.socket.request.session.currentOrder,
 		};
-		this.socket.request.session.orderStatus = ORDER_STATUS.NONE;
+		this.socket.request.session.orderStatus = null;
 		this.socket.request.session.currentOrder = [];
 		if (!Array.isArray(this.socket.request.session.orders)) {
 			this.socket.request.session.orders = [order];

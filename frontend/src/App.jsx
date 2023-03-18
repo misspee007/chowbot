@@ -80,9 +80,16 @@ const App = () => {
 									value={input}
 									onChange={handleInput}
 									required
+									autoComplete="off"
+									disabled={prevMsgs.length === 0 && messages.length === 0}
 								/>
 							</Form.Group>
-							<Button variant="primary" type="submit" className="w-100">
+							<Button
+								variant="primary"
+								type="submit"
+								className="w-100"
+								disabled={input === ""}
+							>
 								Send
 							</Button>
 						</Form>

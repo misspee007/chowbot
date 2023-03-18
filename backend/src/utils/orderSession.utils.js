@@ -1,7 +1,7 @@
-const { MenuModel, ChatModel } = require("../models");
+const { MenuModel } = require("../models");
 
 function parseOrderHistory(orders) {
-	let msg = `Order History:
+	let msg = `Chowbot: Here's your order history:
 
   `;
 
@@ -18,6 +18,7 @@ function parseOrderHistory(orders) {
 
 		msg += `Total: ₦${order.total}
 
+    Select 0 to go back to the main menu
     `;
 	});
 
@@ -25,7 +26,7 @@ function parseOrderHistory(orders) {
 }
 
 function parseOrder(order) {
-	let msg = `Current Order:
+	let msg = `Chowbot: Here's your pending order:
 
   `;
 
@@ -35,8 +36,9 @@ function parseOrder(order) {
 	});
 
 	msg += `Total: ₦${order.reduce((acc, item) => acc + item.price * item.qty, 0)}
+
   `;
-	msg += `0. Go back to main menu`;
+	msg += `Select 0 to go back to main menu`;
 	return msg;
 }
 
@@ -49,13 +51,6 @@ async function getMenu() {
 		throw new Error(err);
 	}
 }
-
-const ORDER_STATUS = {
-	PENDING: "pending",
-	CONFIRMED: "confirmed",
-	CANCELLED: "cancelled",
-	NONE: "none",
-};
 
 class OrderingSessionEvent {
 	constructor({ data, eventName, message, isBot }) {
@@ -70,6 +65,5 @@ module.exports = {
 	parseOrderHistory,
 	parseOrder,
 	getMenu,
-	ORDER_STATUS,
 	OrderingSessionEvent,
 };

@@ -13,6 +13,8 @@ const sess = {
 	cookie: {
 		name: "chowbot",
 		maxAge: config.COOKIE_MAX_AGE,
+    httpOnly: false,
+    secure: false,
 	},
 };
 

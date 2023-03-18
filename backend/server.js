@@ -1,18 +1,21 @@
 const http = require("http");
 const { Server } = require("socket.io");
+const helmet = require("helmet");
 
 const app = require("./app");
 const database = require("./src/database/db");
 const sessionMiddleware = require("./src/middleware/session");
 const config = require("./src/config");
-const { corsConfig, wrap } = require("./src/utils/server.utils");
-const OrderingSession = require("./src/components/OrderingSession");
+const { corsConfig, helmetConfig, wrap } = require("./src/utils/server.utils");
+const OrderingSession = require("./src/controllers/OrderingSession");
 
 const server = http.createServer(app);
 const io = new Server(server, {
 	cors: corsConfig,
 });
 
+// express middleware
+io.engine.use(helmet(helmetConfig));
 io.use(wrap(sessionMiddleware));
 
 // connect to database
