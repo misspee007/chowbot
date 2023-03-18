@@ -6,7 +6,7 @@ const database = require("./src/database/db");
 const sessionMiddleware = require("./src/middleware/session");
 const config = require("./src/config");
 const { corsConfig, wrap } = require("./src/utils/server.utils");
-const OrderingSession = require("./src/components/OrderingSession");
+const OrderingSession = require("./src/controllers/OrderingSession");
 
 const server = http.createServer(app);
 const io = new Server(server, {

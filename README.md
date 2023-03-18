@@ -56,57 +56,81 @@ A typical workflow is that the bot will prompt the user to select a meal from th
 |  name |  string |  required |
 |  price |  number | required  |
 
+### Events
+#### Server
+| event  |  payload  |  description |
+|---|---|---|
+|  message  |  eventName, message, isBot |  Sends a message to the client. |
+| chatHistory  | eventName, message, isBot |  Sends a message from the chat history to the client. Emitted when `getChatHistory()` method is called |
+
+##### Event Payload
+| field  |  data_type | description  |
+|---|---|---|
+|  message |  string |  The message to be sent |
+| data  | any  |  Additional data to be sent |
+| eventName  | string  |  The name of the event being emitted  |
+| isBot  | boolean  |  Indicates if a message was initialised by the bot or the user  |
+
+
+#### Client
+| event  |  description |
+|---|---|---|
+|  message  |  Sends a message to the server |
+| menu |  Sends a message to the server and triggers the server's `handleMenu()` method for processing menu selections |
+
+##### Event Payload
+| field  |  data_type | description  |
+|---|---|---|
+|  eventName |  string |  The name of the event |
+| input  | string  | The message to be sent to the server |
+
 ---
 ## Development
 ### Prerequisites
-- A MongoDB
-- A Sentry
+- Make sure you have [Nodejs](https://nodejs.org) installed.
+- Make sure you have [MongoDB](https://www.mongodb.com/) installed and running, or use [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) for a cloud-based database.
+- Make sure you have a [Sentry](https://sentry.io/) account for error logging. If you don't want to use Sentry, you can remove the `sentry` middleware from `backend/src/middleware/sentry.js` and `backend/src/app.js`.
 ### Starting the app
 - Clone the repository
-```
-
+```bash
 git clone https://github.com/misspee007/chowbot.git
-
 ```
 - Navigate to the root folder, copy the .env.example file and fill in the values.
-```
-
+```bash
 cp .env.example .env
-
 ```
 - Install dependencies and start server
-```
-
+```bash
 cd backend && npm install
 npm run start
-
 ```
 - Open another terminal, install frontend dependencies and start the app
-```
-
+```bash
 cd frontend && npm install
 npm run dev
-
 ```
 - Go to http://localhost:5173 to view the app.
 
 ### Build
 - Run build command
-```
-
+```bash
 cd frontend
 npm run build
-
 ```
 - Go to http://localhost:\<PORT> to view. The default PORT is 3399.
 
+### Seeding the database
+- Run the seeder script
+```bash
+npm run seed
+```
 
 ### File Structure
 ```
 .
 ├── backend
 │   ├── src
-│   │   ├── components
+│   │   ├── controllers
 │   │   │   └── OrderingSession.js //contains the logic for the ordering session
 │   │   ├── config
 │   │   │   └── index.js //contains the configuration for the app (i.e initialisation of env variables)
