@@ -2,8 +2,11 @@ const express = require("express");
 const Sentry = require("@sentry/node");
 const initializeSentry = require("./src/middleware/sentry");
 const path = require("path");
+const cors = require("cors");
+const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
 
+const { corsConfig, helmetConfig } = require("./src/utils/server.utils");
 const sessionMiddleware = require("./src/middleware/session");
 
 const app = express();
@@ -13,6 +16,12 @@ const SentryInit = initializeSentry(app);
 app.use(Sentry.Handlers.requestHandler());
 app.use(Sentry.Handlers.tracingHandler());
 
+// security middleware
+app.use(helmet(helmetConfig));
+// cors middleware
+app.use(cors(corsConfig));
+
+// session middleware
 app.set("trust proxy", 1);
 app.use(sessionMiddleware);
 app.use(cookieParser());
