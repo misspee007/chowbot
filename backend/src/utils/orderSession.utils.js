@@ -18,6 +18,7 @@ function parseOrderHistory(orders) {
 
 		msg += `Total: ₦${order.total}
 
+    Select 0 to go back to the main menu
     `;
 	});
 
@@ -51,13 +52,6 @@ async function getMenu() {
 	}
 }
 
-const ORDER_STATUS = {
-	PENDING: "pending",
-	CONFIRMED: "confirmed",
-	CANCELLED: "cancelled",
-	NONE: "none",
-};
-
 class OrderingSessionEvent {
 	constructor({ data, eventName, message, isBot }) {
 		this.data = data;
@@ -71,6 +65,5 @@ module.exports = {
 	parseOrderHistory,
 	parseOrder,
 	getMenu,
-	ORDER_STATUS,
 	OrderingSessionEvent,
 };

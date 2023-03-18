@@ -80,7 +80,7 @@ const App = () => {
 									value={input}
 									onChange={handleInput}
 									required
-									AutoComplete="off"
+									autoComplete="off"
 									disabled={prevMsgs.length === 0 && messages.length === 0}
 								/>
 							</Form.Group>

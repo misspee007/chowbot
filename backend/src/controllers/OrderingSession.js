@@ -4,9 +4,9 @@ const {
 	parseOrder,
 	parseOrderHistory,
 	getMenu,
-	ORDER_STATUS,
 	OrderingSessionEvent,
 } = require("../utils/orderSession.utils");
+const { ORDER_STATUS } = require("../utils/constants.utils");
 
 class OrderingSession {
 	constructor(socket) {
@@ -165,16 +165,16 @@ class OrderingSession {
 	}
 
 	handleMessage(message) {
-		if (!message || message.trim().length === 0) {
-			console.log("Invalid message: ", message);
-			return this.init("Invalid message. Please try again.");
-		}
-
 		this.emitOrderingEvent({
 			message: `You: ${message}`,
 			eventName: "message",
 			isBot: false,
 		});
+
+		if (!message || message.trim().length === 0) {
+			console.log("Invalid message: ", message);
+			return this.init("Invalid message. Please try again.");
+		}
 
 		const selectedOption = Number(message);
 
@@ -222,7 +222,7 @@ class OrderingSession {
 		return message;
 	}
 
-	handleMenuOption(option, isRetry = false) {
+	handleMenuOption(option) {
 		this.emitOrderingEvent({
 			message: `You: ${option}`,
 			eventName: "message",
@@ -234,7 +234,7 @@ class OrderingSession {
 
 		if (item) {
 			// if this is the first item in the order, set order status
-			if (!this.socket.request.session.currentOrder) {
+			if (!this.socket.request.session.orderStatus) {
 				this.socket.request.session.orderStatus = ORDER_STATUS.PENDING;
 				this.socket.request.session.currentOrder = [];
 				this.saveSession();
@@ -263,7 +263,10 @@ class OrderingSession {
 
 	checkout() {
 		// if there is no pending order, display error message, else proceed to checkout
-		if (this.socket.request.session.orderStatus !== ORDER_STATUS.PENDING) {
+		if (
+			!this.socket.request.session.orderStatus ||
+			this.socket.request.session.orderStatus !== ORDER_STATUS.PENDING
+		) {
 			let message = `Chowbot: No order to place!
       Please select an option:
       1. Place an order
@@ -293,7 +296,7 @@ class OrderingSession {
 				0
 			),
 		};
-		this.socket.request.session.orderStatus = ORDER_STATUS.NONE;
+		this.socket.request.session.orderStatus = null;
 		this.socket.request.session.currentOrder = [];
 		if (!Array.isArray(this.socket.request.session.orders)) {
 			this.socket.request.session.orders = [order];
@@ -312,42 +315,41 @@ class OrderingSession {
 		});
 	}
 
-	showOrderHistory() {
+	showOrderHistory(retry) {
 		let message = ``;
 		this.findUser()
 			.then((user) => {
-				if (user.orders.length) {
+				if (retry) {
+					message +=
+						"Chowbot: Invalid option. Please select 0 to go back to the main menu.";
+				} else if (user.orders.length) {
 					message += parseOrderHistory(user.orders);
 				} else {
 					message += `Chowbot: It appears you have not placed any orders recently. Please select 0 to go back to the main menu.
       `;
 				}
-				message += `0. Go back to main menu`;
 
 				this.emitOrderingEvent({
 					message: message,
 					eventName: "menu",
 					isBot: true,
 				});
-        this.socket.on("menu", (option) => {
-          // validate option
-          switch (option) {
-            case "0":
-              this.handleMenuOption(option);
-              // switch off event listener
-              this.socket.off("menu", () => {
-                console.log("Menu Event listener switched off");
-              });
-              break;
-            default:
-              this.emitOrderingEvent({
-                message: `Chowbot: Invalid option. Please select 0 to go back to the main menu.`,
-                eventName: "menu",
-                isBot: true,
-              });
-              break;
-          }
-        });
+				this.socket.once("menu", (option) => {
+					// validate option
+					switch (option) {
+						case "0":
+							this.handleMenuOption(option);
+							break;
+						default:
+							this.emitOrderingEvent({
+								message: `You: ${option}`,
+								eventName: "message",
+								isBot: false,
+							});
+							this.showOrderHistory(true);
+							break;
+					}
+				});
 			})
 			.catch((err) => {
 				console.log("Error finding user: ", err);
@@ -355,15 +357,19 @@ class OrderingSession {
 			});
 	}
 
-	showCurrentOrder() {
-		if (
+	showCurrentOrder(retry) {
+		let message = "";
+		if (retry) {
+			message =
+				"Chowbot: Invalid option. Please select 0 to go back to the main menu.";
+		} else if (
 			!this.socket.request.session.orderStatus ||
 			this.socket.request.session.orderStatus !== ORDER_STATUS.PENDING
 		) {
 			return this.init("No order in progress!");
+		} else {
+			message = parseOrder(this.socket.request.session.currentOrder);
 		}
-
-		const message = parseOrder(this.socket.request.session.currentOrder);
 
 		this.emitOrderingEvent({
 			message: message,
@@ -371,29 +377,29 @@ class OrderingSession {
 			isBot: true,
 		});
 
-		this.socket.on("menu", (option) => {
-      // validate option
+		this.socket.once("menu", (option) => {
+			// validate option
 			switch (option) {
 				case "0":
 					this.handleMenuOption(option);
-					// switch off event listener
-					this.socket.off("menu", () => {
-            console.log("Menu Event listener switched off");
-          });
 					break;
 				default:
 					this.emitOrderingEvent({
-						message: `Chowbot: Invalid option. Please select 0 to go back to the main menu.`,
-						eventName: "menu",
-						isBot: true,
+						message: `You: ${option}`,
+						eventName: "message",
+						isBot: false,
 					});
+					this.showCurrentOrder(true);
 					break;
 			}
 		});
 	}
 
 	cancelOrder() {
-		if (this.socket.request.session.orderStatus !== ORDER_STATUS.PENDING) {
+		if (
+			!this.socket.request.session.orderStatus ||
+			this.socket.request.session.orderStatus !== ORDER_STATUS.PENDING
+		) {
 			return this.init("No order in progress!");
 		}
 
@@ -407,7 +413,7 @@ class OrderingSession {
 			),
 			items: this.socket.request.session.currentOrder,
 		};
-		this.socket.request.session.orderStatus = ORDER_STATUS.NONE;
+		this.socket.request.session.orderStatus = null;
 		this.socket.request.session.currentOrder = [];
 		if (!Array.isArray(this.socket.request.session.orders)) {
 			this.socket.request.session.orders = [order];
