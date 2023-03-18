@@ -6,7 +6,7 @@ This is a restaurant chatbot that assists customers in placing orders for their 
 
 ## Live URL
 
-https://chowbot.onrender.com
+https://chowbot.herokuapp.com
 
 ---
 
@@ -174,8 +174,8 @@ npm run seed
 │   └── package.json //contains the dependencies for the frontend
 ├── .env.example
 ├── .gitignore
-├── .node-version //node version, required by the hosting platform, render.com
 ├── package.json //contains the scripts for the app used in production. Not recommended for development.
+|── Procfile //contains the command to start the app in production
 └── README.md
 ```
 
